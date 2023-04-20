@@ -51,7 +51,7 @@ limitations under the License.
                   style="font-size: 1.5rem"
                 ></q-icon>
                 <div class="vertical-middle text-subtitle2">
-                  Reporatble change should be in
+                  Reportable change should be in
                   {{ props.row.type.toUpperCase() }} Range
                 </div>
               </div>
