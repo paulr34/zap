@@ -214,7 +214,7 @@
     "license-checker": "^25.0.1",
     "node-7z": "^3.0.0",
     "node-abi": "^2.30.0",
-    "node-gyp": "^8.1.0",
+    "node-gyp": "^8.4.1",
     "node-pre-gyp": "^0.17.0",
     "nodejs-file-downloader": "^4.9.3",
     "octokit": "^1.7.2",
