@@ -199,7 +199,7 @@ jobs:
       - name: Build & Release for Windows / Mac universal binary on macOS
         if: startsWith(matrix.os, 'macos')
         run: |
-          node-gyp -v
+          npm install -g node-gyp@8.4.1
           npm run pack:win
           npm run pkg:win
           npm run pack:cli:win
