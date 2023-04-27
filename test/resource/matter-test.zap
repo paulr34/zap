@@ -209,8 +209,8 @@
       "profileId": "0x0104",
       "endpointId": 1,
       "networkId": "Primary",
-      "endpointVersion": null,
-      "deviceIdentifier": null
+      "endpointVersion": 1,
+      "deviceIdentifier": 15
     }
   ]
 }
