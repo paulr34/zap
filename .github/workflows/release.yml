@@ -217,6 +217,7 @@ jobs:
       - name: Build & Release for Linux
         if: startsWith(matrix.os, 'ubuntu')
         run: |
+          node-gyp -v
           npm run pack:linux
           npm run pkg:linux
           npm run pack:cli:linux
