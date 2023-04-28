@@ -88,7 +88,6 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           npm install -g node-gyp@8.4.1
-          node-gyp -v
           npm run pack:win
           npm run pkg:win
           npm run pack:cli:win
