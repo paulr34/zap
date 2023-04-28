@@ -190,7 +190,7 @@ jobs:
           npm rebuild canvas --update-binary
           npm rebuild libxmljs --update-binary
           npm ci
-          run: npm install -g node-gyp@8.4.1
+          npm install -g node-gyp@8.4.1
           npm run version-stamp
 
       - name: Building frontend / backend
