@@ -190,6 +190,7 @@ jobs:
           npm rebuild canvas --update-binary
           npm rebuild libxmljs --update-binary
           npm ci
+          run: npm install -g node-gyp@8.4.1
           npm run version-stamp
 
       - name: Building frontend / backend
@@ -198,7 +199,6 @@ jobs:
 
       - name: Build & Release for Windows / Mac universal binary on macOS
         if: startsWith(matrix.os, 'macos')
-        run: npm install -g node-gyp@8.4.1
         run: |
           npm run pack:win
           npm run pkg:win
