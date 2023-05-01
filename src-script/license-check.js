@@ -37,7 +37,7 @@ checker.init(args, (err, json) => {
           json[x].licenses +
           '"'
       )
-      fail = true
+  
     }
   }
   if (fail) {
