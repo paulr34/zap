@@ -668,7 +668,7 @@ exports.map = {
       type: x.NOTICE_TYPE,
       message: x.NOTICE_MESSAGE,
       severity: x.NOTICE_SEVERITY,
-      order: x.NOTICE_ORDER,
+      id: x.NOTICE_ID,
       display: x.DISPLAY,
       seen: x.SEEN,
     }
@@ -680,9 +680,7 @@ exports.map = {
       type: x.NOTICE_TYPE,
       message: x.NOTICE_MESSAGE,
       severity: x.NOTICE_SEVERITY,
-      order: x.NOTICE_ORDER,
-      display: x.DISPLAY,
-      seen: x.SEEN,
+      id: x.NOTICE_ID,
     }
   }
 }
