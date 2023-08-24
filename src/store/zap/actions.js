@@ -761,16 +761,12 @@ export function clearLastSelectedDomain(context) {
   context.commit('clearLastSelectedDomain')
 }
 
-export function updateUcComponentState(context, projectInfoJson) {
-  let ucComponents = Util.getUcComponents(projectInfoJson)
+export function updateUcComponentState(context, projectInfo) {
+  let ucComponents = Util.getUcComponents(projectInfo)
   let selectedUcComponents = Util.getSelectedUcComponents(ucComponents)
-  let selectedUcComponentIds =
-    Util.getClusterIdsByUcComponents(selectedUcComponents)
   context.commit('updateUcComponentState', {
-    projectInfoJson,
     ucComponents,
     selectedUcComponents,
-    selectedUcComponentIds,
   })
 }
 
