@@ -557,12 +557,11 @@ function prepareCluster(cluster, context, isExtension = false) {
         )
       }
       let storagePolicy = dbEnum.storagePolicy.any
-      if (context.listsUseAttributeAccessInterface) {
-        storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
-      } else if (
-        context.attributeAccessInterfaceAttributes &&
-        context.attributeAccessInterfaceAttributes[cluster.name] &&
-        context.attributeAccessInterfaceAttributes[cluster.name].includes(name)
+      if (
+        context.listsUseAttributeAccessInterface &&
+        context?.attributeAccessInterfaceAttributes[cluster.name].includes(
+          attribute
+        )
       ) {
         storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
       }
