@@ -47,13 +47,24 @@ async function getForcedExternalStorage(db, attributeId) {
   let forcedExternal = { byName, lists }
   return forcedExternal
 }
-
+function isJsonString(str) {
+  try {
+    JSON.parse(str)
+  } catch (e) {
+    return false
+  }
+  return true
+}
 async function getForcedExternalStorageTemplate(db, attributeId) {
   let pkgs = await queryPackage.getPackageRefByAttributeId(db, attributeId)
   let zcl = await queryPackage.getPackageByPackageId(db, pkgs)
   zcl = zcl.path
   let obj = await fsp.readFile(zcl, 'utf-8')
-  let data = JSON.parse(obj)
+  JSON.stringify(obj)
+  let data
+  if (isJsonString(obj)) {
+    data = JSON.parse(obj)
+  }
   let byName = data?.attributeAccessInterfaceAttributes
   let lists = data?.listsUseAttributeAccessInterface
   let forcedExternal = { byName, lists }
