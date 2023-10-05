@@ -27,6 +27,14 @@ const fsp = fs.promises
  * to be in sync with the spec
  */
 
+function isJsonString(str) {
+  try {
+    JSON.parse(str)
+  } catch (e) {
+    return false
+  }
+  return true
+}
 /**
  * Returns an array of objects containing global attributes that should be forced external.
  *
@@ -41,26 +49,6 @@ async function getForcedExternalStorage(db, attributeId) {
   let zcl = await queryPackage.getPackageByPackageId(db, pkgs)
   zcl = zcl.path
   let obj = await fsp.readFile(zcl)
-  let data = JSON.parse(obj)
-  let byName = data?.attributeAccessInterfaceAttributes
-  let lists = data?.listsUseAttributeAccessInterface
-  let forcedExternal = { byName, lists }
-  return forcedExternal
-}
-function isJsonString(str) {
-  try {
-    JSON.parse(str)
-  } catch (e) {
-    return false
-  }
-  return true
-}
-async function getForcedExternalStorageTemplate(db, attributeId) {
-  let pkgs = await queryPackage.getPackageRefByAttributeId(db, attributeId)
-  let zcl = await queryPackage.getPackageByPackageId(db, pkgs)
-  zcl = zcl.path
-  let obj = await fsp.readFile(zcl, 'utf-8')
-  JSON.stringify(obj)
   let data
   if (isJsonString(obj)) {
     data = JSON.parse(obj)
@@ -71,33 +59,19 @@ async function getForcedExternalStorageTemplate(db, attributeId) {
   return forcedExternal
 }
 
-/**
- * Returns a flag stating which type of storage option the attribute is categorized to be.
- *
- * @export
- * @param {*} db
- * @param {*} clusterName
- * @param {*} clusterRef
- * @param {*} storagePolicy
- * @param {*} forcedExternal
- * @param {*} attributeId
- * @returns Storage Option
- */
-
 async function computeStorageTemplate(db, clusterRef, attributes) {
   let clusterName
   let forcedExternal
   clusterName = await queryCluster.selectClusterName(db, clusterRef)
-  attributes.forEach(async (attribute) => {
-    forcedExternal = await getForcedExternalStorageTemplate(db, attribute.id)
-    //console.log(forcedExternal)
+  attributes.forEach((attribute) => {
+    forcedExternal = getForcedExternalStorage(db, attribute.id)
     if (
       forcedExternal.byName &&
       forcedExternal.byName[clusterName] &&
       forcedExternal.byName[clusterName].includes(attribute.name)
     ) {
-      attribute.storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
       console.log(attribute)
+      attribute.storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
     }
   })
   return attributes

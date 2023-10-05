@@ -21,6 +21,7 @@
  * @module DB API: zcl database access
  */
 const dbApi = require('./db-api')
+const upgrade = require('../upgrade/upgrade.js')
 const dbMapping = require('./db-mapping')
 const queryAtomic = require('./query-atomic')
 const queryEnum = require('./query-enum')
@@ -673,6 +674,9 @@ ORDER BY CODE`,
       [clusterId]
     )
     .then((rows) => rows.map(dbMapping.map.attribute))
+    .then(
+      (rows) => (rows = upgrade.computeStorageTemplate(db, clusterId, rows))
+    )
 }
 
 async function selectAttributesByClusterIdAndSideIncludingGlobal(
@@ -720,6 +724,9 @@ ORDER BY CODE`,
       [side, clusterId]
     )
     .then((rows) => rows.map(dbMapping.map.attribute))
+    .then(
+      (rows) => (rows = upgrade.computeStorageTemplate(db, clusterId, rows))
+    )
 }
 
 /**

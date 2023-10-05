@@ -20,7 +20,6 @@ const queryDeviceType = require('../db/query-device-type')
 const queryCommand = require('../db/query-command')
 const queryEvent = require('../db/query-event')
 const dbEnum = require('../../src-shared/db-enum')
-const upgrade = require('../upgrade/upgrade.js')
 const templateUtil = require('./template-util')
 const helperC = require('./helper-c')
 const env = require('../util/env')
@@ -731,7 +730,7 @@ function zcl_global_commands(options) {
  * @param {*} options
  * @returns Promise of attribute iteration.
  */
-async function zcl_attributes(options) {
+function zcl_attributes(options) {
   // If used at the toplevel, 'this' is the toplevel context object.
   // when used at the cluster level, 'this' is a cluster
   let promise = templateUtil
@@ -748,15 +747,6 @@ async function zcl_attributes(options) {
         return queryZcl.selectAllAttributes(this.global.db, packageIds)
       }
     })
-    .then(async (attributes) => {
-      if (this.id) {
-        return await upgrade.computeStorageTemplate(
-          this.global.db,
-          this.id,
-          attributes
-        )
-      }
-    })
     .then((atts) => templateUtil.collectBlocks(atts, options, this))
   return templateUtil.templatePromise(this.global, promise)
 }
@@ -769,7 +759,7 @@ async function zcl_attributes(options) {
  * @param {*} options
  * @returns Promise of attribute iteration.
  */
-async function zcl_attributes_client(options) {
+function zcl_attributes_client(options) {
   // If used at the toplevel, 'this' is the toplevel context object.
   // when used at the cluster level, 'this' is a cluster
   let promise = templateUtil
@@ -787,15 +777,6 @@ async function zcl_attributes_client(options) {
           this.global.db,
           dbEnum.side.client,
           packageIds
-        )
-      }
-    })
-    .then(async (attributes) => {
-      if (this.id) {
-        return await upgrade.computeStorageTemplate(
-          this.global.db,
-          this.id,
-          attributes
         )
       }
     })
@@ -835,11 +816,6 @@ async function zcl_attributes_server(options) {
       packageIds
     )
   }
-  serverAttributes = await upgrade.computeStorageTemplate(
-    this.global.db,
-    this.id,
-    serverAttributes
-  )
   if ('removeKeys' in options.hash) {
     let keys = options.hash.removeKeys.split(',')
     keys.forEach((k) => serverAttributes.map((attr) => delete attr[k.trim()]))
