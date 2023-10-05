@@ -673,10 +673,10 @@ WHERE (CLUSTER_REF = ? OR CLUSTER_REF IS NULL)
 ORDER BY CODE`,
       [clusterId]
     )
-    .then((rows) => rows.map(dbMapping.map.attribute))
-    .then(
-      (rows) => (rows = upgrade.computeStorageTemplate(db, clusterId, rows))
-    )
+    .then((rows) => {
+      rows.map(dbMapping.map.attribute)
+      return upgrade.computeStorageTemplate(db, clusterId, rows)
+    })
 }
 
 async function selectAttributesByClusterIdAndSideIncludingGlobal(
