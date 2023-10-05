@@ -674,7 +674,7 @@ ORDER BY CODE`,
       [clusterId]
     )
     .then((rows) => {
-      rows.map(dbMapping.map.attribute)
+      rows = rows.map(dbMapping.map.attribute)
       return upgrade.computeStorageTemplate(db, clusterId, rows)
     })
 }
@@ -724,7 +724,7 @@ ORDER BY CODE`,
       [side, clusterId]
     )
     .then((rows) => {
-      rows.map(dbMapping.map.attribute)
+      rows = rows.map(dbMapping.map.attribute)
       return upgrade.computeStorageTemplate(db, clusterId, rows)
     })
 }
