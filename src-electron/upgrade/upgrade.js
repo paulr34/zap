@@ -65,7 +65,6 @@ async function computeStorageTemplate(db, clusterRef, attributes) {
   clusterName = await queryCluster.selectClusterName(db, clusterRef)
   attributes.forEach(async (attribute) => {
     forcedExternal = await getForcedExternalStorage(db, attribute.id)
-    console.log(forcedExternal)
     if (
       forcedExternal.byName &&
       forcedExternal.byName[clusterName] &&
