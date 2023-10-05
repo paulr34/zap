@@ -723,10 +723,10 @@ WHERE
 ORDER BY CODE`,
       [side, clusterId]
     )
-    .then((rows) => rows.map(dbMapping.map.attribute))
-    .then(
-      (rows) => (rows = upgrade.computeStorageTemplate(db, clusterId, rows))
-    )
+    .then((rows) => {
+      rows.map(dbMapping.map.attribute)
+      return upgrade.computeStorageTemplate(db, clusterId, rows)
+    })
 }
 
 /**
