@@ -673,9 +673,53 @@ WHERE (CLUSTER_REF = ? OR CLUSTER_REF IS NULL)
 ORDER BY CODE`,
       [clusterId]
     )
-    .then((rows) => {
+    .then((rows) => rows.map(dbMapping.map.attribute))
+}
+
+async function selectAttributesByClusterIdIncludingGlobalGen(
+  db,
+  clusterId,
+  packageIds
+) {
+  return dbApi
+    .dbAll(
+      db,
+      `
+SELECT
+  ATTRIBUTE_ID,
+  CLUSTER_REF,
+  CODE,
+  MANUFACTURER_CODE,
+  NAME,
+  TYPE,
+  SIDE,
+  DEFINE,
+  MIN,
+  MAX,
+  MIN_LENGTH,
+  MAX_LENGTH,
+  REPORT_MIN_INTERVAL,
+  REPORT_MAX_INTERVAL,
+  REPORTABLE_CHANGE,
+  REPORTABLE_CHANGE_LENGTH,
+  IS_WRITABLE,
+  DEFAULT_VALUE,
+  IS_OPTIONAL,
+  REPORTING_POLICY,
+  STORAGE_POLICY,
+  IS_NULLABLE,
+  IS_SCENE_REQUIRED,
+  ARRAY_TYPE,
+  MUST_USE_TIMED_WRITE
+FROM ATTRIBUTE
+WHERE (CLUSTER_REF = ? OR CLUSTER_REF IS NULL)
+  AND PACKAGE_REF IN (${dbApi.toInClause(packageIds)})
+ORDER BY CODE`,
+      [clusterId]
+    )
+    .then(async (rows) => {
       rows = rows.map(dbMapping.map.attribute)
-      return upgrade.computeStorageTemplate(db, clusterId, rows)
+      return await upgrade.computeStorageTemplate(db, clusterId, rows)
     })
 }
 
@@ -723,9 +767,56 @@ WHERE
 ORDER BY CODE`,
       [side, clusterId]
     )
-    .then((rows) => {
+    .then((rows) => rows.map(dbMapping.map.attribute))
+}
+
+async function selectAttributesByClusterIdAndSideIncludingGlobalGen(
+  db,
+  clusterId,
+  packageIds,
+  side
+) {
+  return dbApi
+    .dbAll(
+      db,
+      `
+SELECT
+  ATTRIBUTE_ID,
+  CLUSTER_REF,
+  CODE,
+  MANUFACTURER_CODE,
+  NAME,
+  TYPE,
+  SIDE,
+  DEFINE,
+  MIN,
+  MAX,
+  MIN_LENGTH,
+  MAX_LENGTH,
+  REPORT_MIN_INTERVAL,
+  REPORT_MAX_INTERVAL,
+  REPORTABLE_CHANGE,
+  REPORTABLE_CHANGE_LENGTH,
+  IS_WRITABLE,
+  DEFAULT_VALUE,
+  IS_OPTIONAL,
+  REPORTING_POLICY,
+  STORAGE_POLICY,
+  IS_NULLABLE,
+  IS_SCENE_REQUIRED,
+  ARRAY_TYPE,
+  MUST_USE_TIMED_WRITE
+FROM ATTRIBUTE
+WHERE
+  SIDE = ?
+  AND (CLUSTER_REF = ? OR CLUSTER_REF IS NULL)
+  AND PACKAGE_REF IN (${dbApi.toInClause(packageIds)})
+ORDER BY CODE`,
+      [side, clusterId]
+    )
+    .then(async (rows) => {
       rows = rows.map(dbMapping.map.attribute)
-      return upgrade.computeStorageTemplate(db, clusterId, rows)
+      return await upgrade.computeStorageTemplate(db, clusterId, rows)
     })
 }
 
@@ -1157,8 +1248,12 @@ exports.selectClusterByCode = selectClusterByCode
 
 exports.selectAttributesByClusterIdAndSideIncludingGlobal =
   selectAttributesByClusterIdAndSideIncludingGlobal
+exports.selectAttributesByClusterIdAndSideIncludingGlobalGen =
+  selectAttributesByClusterIdAndSideIncludingGlobalGen
 exports.selectAttributesByClusterIdIncludingGlobal =
   selectAttributesByClusterIdIncludingGlobal
+exports.selectAttributesByClusterIdIncludingGlobalGen =
+  selectAttributesByClusterIdIncludingGlobalGen
 exports.selectAttributesByClusterCodeAndManufacturerCode =
   selectAttributesByClusterCodeAndManufacturerCode
 exports.selectAttributeById = selectAttributeById

@@ -738,7 +738,7 @@ function zcl_attributes(options) {
     .then((packageIds) => {
       if ('id' in this) {
         // We're functioning inside a nested context with an id, so we will only query for this cluster.
-        return queryZcl.selectAttributesByClusterIdIncludingGlobal(
+        return queryZcl.selectAttributesByClusterIdIncludingGlobalGen(
           this.global.db,
           this.id,
           packageIds
@@ -766,7 +766,7 @@ function zcl_attributes_client(options) {
     .ensureZclPackageIds(this)
     .then((packageIds) => {
       if ('id' in this) {
-        return queryZcl.selectAttributesByClusterIdAndSideIncludingGlobal(
+        return queryZcl.selectAttributesByClusterIdAndSideIncludingGlobalGen(
           this.global.db,
           this.id,
           packageIds,
@@ -803,7 +803,7 @@ async function zcl_attributes_server(options) {
   if ('id' in this) {
     // We're functioning inside a nested context with an id, so we will only query for this cluster.
     serverAttributes =
-      await queryZcl.selectAttributesByClusterIdAndSideIncludingGlobal(
+      await queryZcl.selectAttributesByClusterIdAndSideIncludingGlobalGen(
         this.global.db,
         this.id,
         packageIds,
