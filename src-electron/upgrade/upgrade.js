@@ -73,10 +73,9 @@ async function computeStorageTemplate(db, clusterRef, attributes) {
       ) {
         attribute.storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
       }
+      return attribute
     })
-  ).then(() => {
-    return attributes
-  })
+  )
 }
 
 /**
