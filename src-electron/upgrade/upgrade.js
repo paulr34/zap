@@ -62,8 +62,9 @@ async function getForcedExternalStorage(db, attributeId) {
 async function computeStorageTemplate(db, clusterRef, attributes) {
   let clusterName
   let forcedExternal
+  const requests = []
   clusterName = await queryCluster.selectClusterName(db, clusterRef)
-  attributes.forEach(async (attribute) => {
+  await attributes.reduce(async (promise, attribute) => {
     forcedExternal = await getForcedExternalStorage(db, attribute.id)
     if (
       forcedExternal.byName &&
@@ -72,7 +73,8 @@ async function computeStorageTemplate(db, clusterRef, attributes) {
     ) {
       attribute.storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
     }
-  })
+  }, Promise.resolve())
+
   return attributes
 }
 
