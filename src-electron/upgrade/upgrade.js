@@ -63,7 +63,7 @@ async function computeStorageTemplate(db, clusterRef, attributes) {
   let clusterName
   let forcedExternal
   clusterName = await queryCluster.selectClusterName(db, clusterRef)
-  return Promise.all(
+  let edited = await Promise.all(
     attributes.map(async (attribute) => {
       forcedExternal = await getForcedExternalStorage(db, attribute.id)
       if (
@@ -72,10 +72,12 @@ async function computeStorageTemplate(db, clusterRef, attributes) {
         forcedExternal.byName[clusterName].includes(attribute.name)
       ) {
         attribute.storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
+        return attribute
       }
       return attribute
     })
   )
+  return edited
 }
 
 /**
