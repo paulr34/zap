@@ -735,10 +735,10 @@ function zcl_attributes(options) {
   // when used at the cluster level, 'this' is a cluster
   let promise = templateUtil
     .ensureZclPackageIds(this)
-    .then((packageIds) => {
+    .then(async (packageIds) => {
       if ('id' in this) {
         // We're functioning inside a nested context with an id, so we will only query for this cluster.
-        return queryZcl.selectAttributesByClusterIdIncludingGlobalGen(
+        return await queryZcl.selectAttributesByClusterIdIncludingGlobalGen(
           this.global.db,
           this.id,
           packageIds
@@ -759,28 +759,32 @@ function zcl_attributes(options) {
  * @param {*} options
  * @returns Promise of attribute iteration.
  */
-function zcl_attributes_client(options) {
+async function zcl_attributes_client(options) {
   // If used at the toplevel, 'this' is the toplevel context object.
   // when used at the cluster level, 'this' is a cluster
-  let promise = templateUtil
-    .ensureZclPackageIds(this)
-    .then((packageIds) => {
-      if ('id' in this) {
-        return queryZcl.selectAttributesByClusterIdAndSideIncludingGlobalGen(
-          this.global.db,
-          this.id,
-          packageIds,
-          dbEnum.side.client
-        )
-      } else {
-        return queryZcl.selectAllAttributesBySide(
-          this.global.db,
-          dbEnum.side.client,
-          packageIds
-        )
-      }
-    })
-    .then((atts) => templateUtil.collectBlocks(atts, options, this))
+  let packageIds = await templateUtil.ensureZclPackageIds(this)
+  let clientAttributes = ''
+  if ('id' in this) {
+    // We're functioning inside a nested context with an id, so we will only query for this cluster.
+    clientAttributes =
+      await queryZcl.selectAttributesByClusterIdAndSideIncludingGlobalGen(
+        this.global.db,
+        this.id,
+        packageIds,
+        dbEnum.side.client
+      )
+  } else {
+    clientAttributes = await queryZcl.selectAllAttributesBySide(
+      this.global.db,
+      dbEnum.side.client,
+      packageIds
+    )
+  }
+  if ('removeKeys' in options.hash) {
+    let keys = options.hash.removeKeys.split(',')
+    keys.forEach((k) => clientAttributes.map((attr) => delete attr[k.trim()]))
+  }
+  let promise = templateUtil.collectBlocks(clientAttributes, options, this)
   return templateUtil.templatePromise(this.global, promise)
 }
 
