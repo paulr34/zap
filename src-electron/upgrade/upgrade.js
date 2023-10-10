@@ -75,7 +75,6 @@ async function computeStorageTemplate(db, clusterRef, attributes) {
         attribute.storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
         return attribute
       } else {
-        attribute.storagePolicy = dbEnum.storagePolicy.any
         return attribute
       }
     })
