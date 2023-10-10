@@ -742,9 +742,12 @@ async function zcl_attributes(options) {
       this.id,
       packageIds
     )
-    console.log('attributes')
   } else {
     attributes = await queryZcl.selectAllAttributes(this.global.db, packageIds)
+  }
+  if ('removeKeys' in options.hash) {
+    let keys = options.hash.removeKeys.split(',')
+    keys.forEach((k) => attributes.map((attr) => delete attr[k.trim()]))
   }
   let promise = templateUtil.collectBlocks(attributes, options, this)
   return templateUtil.templatePromise(this.global, promise)
@@ -772,13 +775,16 @@ async function zcl_attributes_client(options) {
         packageIds,
         dbEnum.side.server
       )
-    console.log('clientAttributes')
   } else {
     clientAttributes = await queryZcl.selectAllAttributesBySide(
       this.global.db,
       dbEnum.side.server,
       packageIds
     )
+  }
+  if ('removeKeys' in options.hash) {
+    let keys = options.hash.removeKeys.split(',')
+    keys.forEach((k) => clientAttributes.map((attr) => delete attr[k.trim()]))
   }
   let promise = templateUtil.collectBlocks(clientAttributes, options, this)
   return templateUtil.templatePromise(this.global, promise)
@@ -809,13 +815,16 @@ async function zcl_attributes_server(options) {
         packageIds,
         dbEnum.side.server
       )
-    console.log('serverAttributes')
   } else {
     serverAttributes = await queryZcl.selectAllAttributesBySide(
       this.global.db,
       dbEnum.side.server,
       packageIds
     )
+  }
+  if ('removeKeys' in options.hash) {
+    let keys = options.hash.removeKeys.split(',')
+    keys.forEach((k) => serverAttributes.map((attr) => delete attr[k.trim()]))
   }
   let promise = templateUtil.collectBlocks(serverAttributes, options, this)
   return templateUtil.templatePromise(this.global, promise)
