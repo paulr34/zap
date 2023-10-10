@@ -816,6 +816,7 @@ ORDER BY CODE`,
     )
     .then(async (rows) => {
       rows = rows.map(dbMapping.map.attribute)
+      //console.log(await upgrade.computeStorageTemplate(db, clusterId, rows))
       return await upgrade.computeStorageTemplate(db, clusterId, rows)
     })
 }
