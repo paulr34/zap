@@ -809,7 +809,6 @@ async function zcl_attributes_server(options) {
         packageIds,
         dbEnum.side.server
       )
-    console.log(serverAttributes)
   } else {
     serverAttributes = await queryZcl.selectAllAttributesBySide(
       this.global.db,
