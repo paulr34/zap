@@ -67,7 +67,6 @@ async function computeStorageTemplate(db, clusterRef, attributes) {
     await attributes.map(async (attribute) => {
       forcedExternal = await getForcedExternalStorage(db, attribute.id)
       if (
-        !attribute.clusterRef &&
         forcedExternal.byName &&
         forcedExternal.byName[clusterName] &&
         forcedExternal.byName[clusterName].includes(attribute.name)

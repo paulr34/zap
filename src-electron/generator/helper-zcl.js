@@ -16,6 +16,7 @@
  */
 
 const queryZcl = require('../db/query-zcl')
+const upgrade = require('../upgrade/upgrade.js')
 const queryDeviceType = require('../db/query-device-type')
 const queryCommand = require('../db/query-command')
 const queryEvent = require('../db/query-event')
@@ -737,10 +738,15 @@ async function zcl_attributes(options) {
   let attributes = ''
   if ('id' in this) {
     // We're functioning inside a nested context with an id, so we will only query for this cluster.
-    attributes = await queryZcl.selectAttributesByClusterIdIncludingGlobalGen(
+    attributes = await queryZcl.selectAttributesByClusterIdIncludingGlobal(
       this.global.db,
       this.id,
       packageIds
+    )
+    attributes = await upgrade.computeStorageTemplate(
+      this.global.db,
+      this.id,
+      attributes
     )
   } else {
     attributes = await queryZcl.selectAllAttributes(this.global.db, packageIds)
@@ -769,12 +775,17 @@ async function zcl_attributes_client(options) {
   if ('id' in this) {
     // We're functioning inside a nested context with an id, so we will only query for this cluster.
     clientAttributes =
-      await queryZcl.selectAttributesByClusterIdAndSideIncludingGlobalGen(
+      await queryZcl.selectAttributesByClusterIdAndSideIncludingGlobal(
         this.global.db,
         this.id,
         packageIds,
         dbEnum.side.server
       )
+    clientAttributes = await upgrade.computeStorageTemplate(
+      this.global.db,
+      this.id,
+      clientAttributes
+    )
   } else {
     clientAttributes = await queryZcl.selectAllAttributesBySide(
       this.global.db,
@@ -809,12 +820,17 @@ async function zcl_attributes_server(options) {
   if ('id' in this) {
     // We're functioning inside a nested context with an id, so we will only query for this cluster.
     serverAttributes =
-      await queryZcl.selectAttributesByClusterIdAndSideIncludingGlobalGen(
+      await queryZcl.selectAttributesByClusterIdAndSideIncludingGlobal(
         this.global.db,
         this.id,
         packageIds,
         dbEnum.side.server
       )
+    serverAttributes = await upgrade.computeStorageTemplate(
+      this.global.db,
+      this.id,
+      serverAttributes
+    )
   } else {
     serverAttributes = await queryZcl.selectAllAttributesBySide(
       this.global.db,
