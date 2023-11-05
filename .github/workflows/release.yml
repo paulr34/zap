@@ -205,9 +205,18 @@ jobs:
         run: |
           npm run build
 
-      - name: Build & Release for Windows / Mac universal binary on macOS
-        if: startsWith(matrix.os, 'macos')
+          # macOS notarization API key
+          # CSC_LINK: ${{ secrets.api_key_id }}
+          # CSC_KEY_PASSWORD: ${{ secrets.api_key_issuer_id }}
+
+      - name: Build & Release for Linux, Mac, and Windows
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
+          npm run pack:linux
+          npm run pkg:linux
+          ls ./dist/
+          npm run pack:cli:linux
+
           npm run pack:win
           npm run pkg:win
           ls ./dist/
@@ -217,21 +226,6 @@ jobs:
           npm run pkg:mac
           ls ./dist/
           npm run pack:cli:mac
-
-        env:
-          GH_TOKEN: ${{ secrets.github_token }}
-
-          # macOS notarization API key
-          # CSC_LINK: ${{ secrets.api_key_id }}
-          # CSC_KEY_PASSWORD: ${{ secrets.api_key_issuer_id }}
-
-      - name: Build & Release for Linux
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          npm run pack:linux
-          npm run pkg:linux
-          ls ./dist/
-          npm run pack:cli:linux
 
           mv dist/zap-linux-amd64.deb dist/zap-linux-x64.deb
           mv dist/zap-linux-x86_64.rpm dist/zap-linux-x64.rpm
