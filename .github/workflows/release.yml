@@ -202,7 +202,7 @@ jobs:
           sudo apt-get install xvfb
           sudo dpkg --add-architecture i386
           sudo mkdir -pm755 /etc/apt/keyrings
-
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 76F1A20FF987672F
           sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
 
           curl -fsSL  https://dl.winehq.org/wine-builds/Release.key | sudo apt-key add -
