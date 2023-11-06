@@ -199,20 +199,7 @@ jobs:
           npm rebuild libxmljs --update-binary
           npm ci
           npm run version-stamp
-          sudo apt-get install xvfb
-          sudo dpkg --add-architecture i386
-          sudo mkdir -pm755 /etc/apt/keyrings
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 76F1A20FF987672F
-          sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
-
-          curl -fsSL  https://dl.winehq.org/wine-builds/Release.key | sudo apt-key add -
-
-          sudo apt-add-repository https://dl.winehq.org/wine-builds/ubuntu/
-
-          sudo apt-add-repository https://dl.winehq.org/wine-builds/ubuntu/
-          sudo apt-get update
-
-          sudo apt-get install -y --install-recommends winehq-stable
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \ && apt-get install -y wine \ && curl https://releases.jfrog.io/artifactory/jfrog-gpg-public/jfrog_public_gpg.key | apt-key add - \
 
 
       - name: Building frontend / backend
