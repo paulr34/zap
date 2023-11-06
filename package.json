@@ -19,6 +19,11 @@
   "main": "dist/src-electron/ui/main-ui.js",
   "bin": "dist/src-electron/main-process/main.js",
   "scripts": {
+   
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+
     "download-artifact": "npx ts-node src-script/download-artifact.ts",
     "pkg:download-artifact": "npx pkg src-script/download-artifact.js  -t node18-linux-x64,node18-linux-arm64,node18-macos-x64,node18-win-x64 --output dist/download-artifact --compress GZip",
     "compile:download-artifact": "tsc src-script/download-artifact.ts --esModuleInterop",
@@ -40,7 +45,6 @@
     "test:e2e-matter": "node src-script/zap-uitest.js open matter",
     "test:e2e-matter-ci": "node src-script/zap-uitest.js run matter",
     "report": "node src-script/zap-combine-reports.js",
-    "postinstall": "electron-builder install-app-deps && husky install && npm rebuild canvas --update-binary && npm run version-stamp",
     "buildAndPack:win": "npm run build && npm run pack:win",
     "buildAndPack:mac": "npm run build && npm run pack:mac && cp apack.json dist/mac",
     "buildAndPack:linux": "npm run build && npm run pack:linux",
@@ -116,6 +120,7 @@
     "zip": "node ./src-script/7zip-bin-wrapper.js"
   },
   "dependencies": {
+    "@electron-forge/cli":"6.4.2",
     "@globalhive/vuejs-tour": "^1.3.4",
     "@quasar/extras": "^1.15.6",
     "@types/yargs": "^15.0.5",
