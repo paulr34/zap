@@ -200,9 +200,7 @@ jobs:
           npm rebuild libxmljs --update-binary
           npm ci
           npm run version-stamp
-          sudo apt-get update 
-          sudo apt-get upgrade
-          sudo apt-get install wine32
+          sudo apt-get update && apt-get install libwine
 
       - name: Building frontend / backend
         run: |
