@@ -31,7 +31,7 @@ jobs:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3.0.0
         with:
-          node-version: '18.17.0'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - uses: browser-actions/setup-chrome@v1
         with:
@@ -60,7 +60,7 @@ jobs:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3.0.0
         with:
-          node-version: '18.17.0'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - uses: browser-actions/setup-chrome@v1
         with:
@@ -89,7 +89,7 @@ jobs:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3.0.0
         with:
-          node-version: '18.17.0'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - run: sudo ./src-script/install-packages-ubuntu
       - run: sudo apt-get install --fix-missing libxml2-utils
@@ -128,7 +128,7 @@ jobs:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3.0.0
         with:
-          node-version: '18.17.0'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Download jest coverage artifact
         uses: actions/download-artifact@v3
@@ -148,7 +148,7 @@ jobs:
     # Platforms to build on/for
     strategy:
       matrix:
-        os: [ubuntu-22.04]
+        os: [macos-11, ubuntu-22.04]
       fail-fast: false
 
     steps:
@@ -158,7 +158,7 @@ jobs:
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v3.0.0
         with:
-          node-version: '18.17.0'
+          node-version: 18.x
           cache: 'npm'
 
       - name: Prepare Linux build environment
@@ -200,18 +200,41 @@ jobs:
           npm rebuild libxmljs --update-binary
           npm ci
           npm run version-stamp
-          sudo -s
-          sudo apt-get update && apt-get install wine64
+          sudo dpkg --add-architecture i386
+          sudo apt update
+          wget -qO- https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
+          sudo apt install software-properties-common
+          sudo apt-add-repository 'deb http://dl.winehq.org/wine-builds/ubuntu/ bionic main'
+          wget -qO- https://download.opensuse.org/repositories/Emulators:/Wine:/Debian/xUbuntu_18.04/Release.key | sudo apt-key add -
+          sudo sh -c 'echo "deb https://download.opensuse.org/repositories/Emulators:/Wine:/Debian/xUbuntu_18.04/ ./" > /etc/apt/sources.list.d/obs.list'
+          sudo apt update
+          sudo apt-get install --install-recommends winehq-stable
 
       - name: Building frontend / backend
         run: |
           npm run build
 
+      - name: Build & Release for Windows / Mac universal binary on macOS
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          npm run pack:win
+          npm run pkg:win
+          ls ./dist/
+          npm run pack:cli:win
+
+          npm run pack:mac
+          npm run pkg:mac
+          ls ./dist/
+          npm run pack:cli:mac
+
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+
           # macOS notarization API key
           # CSC_LINK: ${{ secrets.api_key_id }}
           # CSC_KEY_PASSWORD: ${{ secrets.api_key_issuer_id }}
 
-      - name: Build & Release for Linux, Mac, and Windows
+      - name: Build & Release for Linux
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           npm run pack:linux
@@ -221,17 +244,6 @@ jobs:
 
           mv dist/zap-linux-amd64.deb dist/zap-linux-x64.deb
           mv dist/zap-linux-x86_64.rpm dist/zap-linux-x64.rpm
-
-
-          npm run pack:mac
-          npm run pkg:mac
-          ls ./dist/
-          npm run pack:cli:mac
-
-          wine npm run pack:win
-          wine npm run pkg:win
-          ls ./dist/
-          wine npm run pack:cli:win
 
         env:
           GH_TOKEN: ${{ secrets.github_token }}
