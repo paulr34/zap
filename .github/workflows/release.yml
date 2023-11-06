@@ -40,7 +40,7 @@ jobs:
       - run: echo ${{steps.chrome-116.outputs.chrome-path }}
       - run: sudo ./src-script/install-packages-ubuntu
       - run: sudo apt-get install --fix-missing xvfb
-      - run: npm ci
+      - run: npm install
       - run: npm run version-stamp
       - run: npm rebuild canvas --update-binary
       - run: npm rebuild libxmljs --update-binary
@@ -68,7 +68,7 @@ jobs:
         id: chrome-116
       - run: sudo ./src-script/install-packages-ubuntu
       - run: sudo apt-get install --fix-missing xvfb
-      - run: npm ci
+      - run: npm install
       - run: npm run version-stamp
       - run: npm rebuild canvas --update-binary
       - run: npm rebuild libxmljs --update-binary
@@ -95,7 +95,7 @@ jobs:
       - run: sudo apt-get install --fix-missing libxml2-utils
       - run: node --version
       - run: npm --version
-      - run: npm ci
+      - run: npm install
       - run: npm run metafile-check
       - run: npm run version-stamp
       - run: npm rebuild canvas --update-binary
@@ -135,7 +135,7 @@ jobs:
         with:
           name: jest-coverage
       - run: sudo ./src-script/install-packages-ubuntu
-      - run: npm ci
+      - run: npm install
       - run: npm run report
       - name: Codecov
         uses: codecov/codecov-action@v3.1.1
@@ -198,7 +198,7 @@ jobs:
         run: |
           npm rebuild canvas --update-binary
           npm rebuild libxmljs --update-binary
-          npm ci
+          npm install
           npm run version-stamp
 
       - name: Building frontend / backend
