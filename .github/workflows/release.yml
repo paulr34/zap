@@ -200,6 +200,7 @@ jobs:
           npm rebuild libxmljs --update-binary
           npm ci
           npm run version-stamp
+          sudo apt-get install xvfb
           sudo dpkg --add-architecture i386
           sudo mkdir -pm755 /etc/apt/keyrings
 
