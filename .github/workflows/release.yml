@@ -199,7 +199,7 @@ jobs:
           npm rebuild libxmljs --update-binary
           npm ci
           npm run version-stamp
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \ && apt-get install -y wine \ && curl https://releases.jfrog.io/artifactory/jfrog-gpg-public/jfrog_public_gpg.key | apt-key add - \
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \ && apt-get install -y wine \ && curl https://releases.jfrog.io/artifactory/jfrog-gpg-public/jfrog_public_gpg.key | apt-key add - \
 
 
       - name: Building frontend / backend
