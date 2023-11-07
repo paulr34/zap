@@ -169,6 +169,7 @@ jobs:
       - name: Prepare macOS build environment
         if: startsWith(matrix.os, 'macos')
         run: ./src-script/install-packages-osx
+        run: python3 -m pip install setuptools
 
       - name: Prepare macOS certificate
         if: startsWith(matrix.os, 'macos')
@@ -208,6 +209,10 @@ jobs:
       - name: Build & Release for Windows / Mac universal binary on macOS
         if: startsWith(matrix.os, 'macos')
         run: |
+          npm run pack:win
+          npm run pkg:win
+          ls ./dist/
+          npm run pack:cli:win
 
           npm run pack:mac
           npm run pkg:mac
@@ -224,20 +229,10 @@ jobs:
       - name: Build & Release for Linux
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-
           npm run pack:linux
           npm run pkg:linux
           ls ./dist/
           npm run pack:cli:linux
-
-          sudo export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get install -y wine 
-          sudo curl https://releases.jfrog.io/artifactory/jfrog-gpg-public/jfrog_public_gpg.key | apt-key add 
-
-          npm run pack:win
-          npm run pkg:win
-          ls ./dist/
-          npm run pack:cli:win
 
           mv dist/zap-linux-amd64.deb dist/zap-linux-x64.deb
           mv dist/zap-linux-x86_64.rpm dist/zap-linux-x64.rpm
