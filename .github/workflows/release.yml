@@ -200,7 +200,6 @@ jobs:
           npm rebuild libxmljs --update-binary
           npm ci
           npm run version-stamp
-          apt-get install wine
 
       - name: Building frontend / backend
         run: |
@@ -225,6 +224,7 @@ jobs:
       - name: Build & Release for Linux
         if: startsWith(matrix.os, 'ubuntu')
         run: |
+          apt-get install wine
           npm run pack:linux
           npm run pkg:linux
           ls ./dist/
