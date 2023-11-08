@@ -55,6 +55,27 @@ async function getForcedExternalStorage(db, attributeId) {
   return forcedExternal
 }
 
+async function getRevisions(db, attributeId) {
+  let pkgs = await queryPackage.getPackageRefByAttributeId(db, attributeId)
+  let zcl = await queryPackage.getPackageByPackageId(db, pkgs)
+  zcl = zcl?.path
+  let obj = await fsp.readFile(zcl, 'utf-8')
+  let data = parseJson(obj)
+  let revision = data?.globalAttributes
+  return revision
+}
+
+async function computeRevisionImport(db, clusterName, revision, attribute) {
+  if (
+    revision &&
+    revision[clusterName] &&
+    attribute.name == revision[clusterName][0]
+  ) {
+    attribute.defaultValue = revision[clusterName][1]
+  }
+  return attribute
+}
+
 /**
  * This function takes a clusterId (the database ID, not the specification-defined ID) and an array of attributes (associated with the database defined clusterID)
  * and changes the global attributes (attributes with specification defined clusterId = null) to represent storage policy
@@ -162,6 +183,8 @@ async function computeStorageImport(
 }
 
 exports.getForcedExternalStorage = getForcedExternalStorage
+exports.getRevisions = getRevisions
+exports.computeRevisionImport = computeRevisionImport
 exports.computeStorageImport = computeStorageImport
 exports.computeStorageNewConfig = computeStorageNewConfig
 exports.computeStoragePolicyForGlobalAttributes =

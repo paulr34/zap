@@ -675,6 +675,7 @@ WHERE
   let storagePolicy
   let forcedExternal
   let attributeName
+  let revision
   if (atRow.length == 0) {
     attributeId = null
     reportingPolicy = null
@@ -705,6 +706,13 @@ WHERE
       storagePolicy,
       forcedExternal,
       attributeName
+    )
+    revision = await queryUpgrade.getRevisions(db, attributeId)
+    attribute = await queryUpgrade.computeRevisionImport(
+      db,
+      cluster.name,
+      revision,
+      attribute
     )
   }
   if (storagePolicy == dbEnums.storagePolicy.attributeAccessInterface) {

@@ -40,6 +40,9 @@
     },
     "bool": ["commandDiscovery"]
   },
+  "globalAttributes": {
+    "Over the Air Bootloading": ["cluster revision", "4"]
+  },
   "defaults": {
     "text": {
       "manufacturerCodes": "0x1049",
