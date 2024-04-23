@@ -835,7 +835,6 @@ export function updateSelectedUcComponentState(context, projectInfo) {
 
 export function setDirtyState(context) {
   axiosRequests.$serverGet(restApi.uri.getDirtyFlag).then((resp) => {
-    console.log(resp.data)
     context.commit('setDirtyState', resp.data)
   })
 }
