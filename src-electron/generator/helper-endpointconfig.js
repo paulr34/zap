@@ -651,9 +651,6 @@ function determineAttributeDefaultValue(
   typeSize,
   isNullable
 ) {
-  if (type === 'temperature') {
-    console.log(specifiedDefault)
-  }
   if (specifiedDefault !== null || !isNullable) {
     return specifiedDefault
   }
