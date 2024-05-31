@@ -712,7 +712,7 @@ async function collectAttributes(db, sessionId, endpointTypes, options) {
       ? options.spaceForDefaultValue
       : 2
 
-  endpointTypes.forEach((ept) => {
+  for (let ept of endpointTypes) {
     let endpoint = {
       clusterIndex: clusterIndex,
       clusterCount: ept.clusters.length,
@@ -730,7 +730,7 @@ async function collectAttributes(db, sessionId, endpointTypes, options) {
 
     ept.clusters.sort(zclUtil.clusterComparator)
 
-    ept.clusters.forEach((c) => {
+    for (let c of ept.clusters) {
       let cluster = {
         endpointId: ept.endpointId,
         clusterId: asMEI(c.manufacturerCode, c.code),
@@ -756,7 +756,7 @@ async function collectAttributes(db, sessionId, endpointTypes, options) {
       c.attributes.sort(zclUtil.attributeComparator)
 
       // Go over all the attributes in the endpoint and add them to the list.
-      c.attributes.forEach(async (a) => {
+      for (let a of c.attributes) {
         // typeSize is the size of a buffer needed to hold the attribute, if
         // that's known.
         let typeSize = a.typeSize
@@ -967,7 +967,7 @@ async function collectAttributes(db, sessionId, endpointTypes, options) {
           }
           attributeMfgCodes.push(att)
         }
-      })
+      }
 
       // Go over the commands
       c.commands.sort(zclUtil.commandComparator)
@@ -1055,10 +1055,10 @@ async function collectAttributes(db, sessionId, endpointTypes, options) {
         }
         clusterMfgCodes.push(clt)
       }
-    })
+    }
     endpoint.attributeSize = endpointAttributeSize
     endpointList.push(endpoint)
-  })
+  }
 
   return {
     endpointList: endpointList,
