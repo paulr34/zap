@@ -17,7 +17,6 @@
 
 const queryZcl = require('../db/query-zcl.js')
 const queryPackages = require('../db/query-package.js')
-const queryAtomic = require('../db/query-atomic.js')
 const dbEnum = require('../../src-shared/db-enum.js')
 const bin = require('./bin')
 const env = require('./env')
@@ -283,7 +282,7 @@ function isFloat(type) {
  */
 async function isSignedInteger(db, sessionId, type) {
   let sessionPackages = await queryPackages.getSessionPackages(db, sessionId)
-  return await isTypeSignedByNameAndPackage(db, type, sessionPackages)
+  return await queryZcl.isTypeSignedByNameAndPackage(db, type, sessionPackages)
 }
 
 /**
@@ -305,25 +304,6 @@ function isOneBytePrefixedString(type) {
 function isTwoBytePrefixedString(type) {
   type = type.toLowerCase()
   return type == 'long_char_string' || type == 'long_octet_string'
-}
-
-/**
- * Checks if an atomic type by a given name is signed.
- *
- * @param {object} db - The database connection object.
- * @param {string} name - The name of the atomic type.
- * @param {Array} sessionPackages - An array of session packages.
- * @returns {Promise<boolean>} - A promise that resolves to true if the atomic type is signed, false otherwise.
- */
-async function isTypeSignedByNameAndPackage(db, name, sessionPackages) {
-  const sessionPackage = sessionPackages[0].packageRef
-  const rows = await dbApi.dbAll(
-    db,
-    `SELECT IS_SIGNED FROM ATOMIC WHERE NAME = ? AND PACKAGE_REF = ?`,
-    [name, sessionPackage]
-  )
-
-  return rows.length > 0 ? rows[0].IS_SIGNED === 1 : false
 }
 
 /**
