@@ -83,9 +83,12 @@ async function selectAtomicById(db, id) {
 }
 
 /**
- * Checks if atomic type by a given name is signed.
- * @param {*} db
- * @param {*} name
+ * Checks if an atomic type by a given name is signed.
+ *
+ * @param {object} db - The database connection object.
+ * @param {string} name - The name of the atomic type.
+ * @param {Array} sessionPackages - An array of session packages.
+ * @returns {Promise<boolean>} - A promise that resolves to true if the atomic type is signed, false otherwise.
  */
 async function isAtomicSignedByNameAndPackage(db, name, sessionPackages) {
   const sessionPackage = sessionPackages[0].packageRef
