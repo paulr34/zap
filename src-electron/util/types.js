@@ -280,7 +280,7 @@ function isFloat(type) {
  */
 async function isSignedInteger(db, sessionId, type) {
   let sessionPackages = await queryPackages.getSessionPackages(db, sessionId)
-  return await isAtomicSignedByNameAndPackage(db, type, sessionPackages)
+  return await isTypeSignedByNameAndPackage(db, type, sessionPackages)
 }
 
 /**
