@@ -274,9 +274,12 @@ function isFloat(type) {
 }
 
 /**
- * Returns true if a given ZCL type is a signed integer.
- * @param {*} type
- * @returns true if type is signed integer, false otherwise
+ * Checks if a given ZCL type is a signed integer.
+ *
+ * @param {object} db - The database connection object.
+ * @param {string} sessionId - The session ID.
+ * @param {string} type - The name of the ZCL type.
+ * @returns {Promise<boolean>} - A promise that resolves to true if the type is a signed integer, false otherwise.
  */
 async function isSignedInteger(db, sessionId, type) {
   let sessionPackages = await queryPackages.getSessionPackages(db, sessionId)
