@@ -1592,6 +1592,9 @@ function prepareDeviceType(deviceType) {
     scope: deviceType.scope ? deviceType.scope[0] : '',
     superset: deviceType.superset ? deviceType.superset[0] : '',
   }
+  if ('endpointComposition' in deviceType) {
+    ret.composition = deviceType.endpointComposition.type
+  }
   if ('clusters' in deviceType) {
     ret.clusters = []
     deviceType.clusters.forEach((cluster) => {

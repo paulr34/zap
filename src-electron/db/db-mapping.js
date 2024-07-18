@@ -407,6 +407,7 @@ exports.map = {
       caption: x.DESCRIPTION,
       class: x.CLASS,
       packageRef: x.PACKAGE_REF,
+      composition: x.COMPOSITION,
     }
   },
 
