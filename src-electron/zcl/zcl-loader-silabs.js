@@ -1593,7 +1593,7 @@ function prepareDeviceType(deviceType) {
     superset: deviceType.superset ? deviceType.superset[0] : '',
   }
   if ('endpointComposition' in deviceType) {
-    ret.composition = deviceType.endpointComposition.type
+    ret.composition = deviceType.endpointComposition[0].type[0]
   }
   if ('clusters' in deviceType) {
     ret.clusters = []

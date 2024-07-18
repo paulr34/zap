@@ -935,7 +935,7 @@ async function insertDeviceTypes(db, packageId, data) {
   return dbApi
     .dbMultiInsert(
       db,
-      'INSERT INTO DEVICE_TYPE (PACKAGE_REF, DOMAIN, CODE, PROFILE_ID, NAME, DESCRIPTION, CLASS, SCOPE, SUPERSET) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO DEVICE_TYPE (PACKAGE_REF, DOMAIN, CODE, PROFILE_ID, NAME, DESCRIPTION, CLASS, SCOPE, SUPERSET, COMPOSITION) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       data.map((dt) => {
         return [
           packageId,
@@ -947,6 +947,7 @@ async function insertDeviceTypes(db, packageId, data) {
           dt.class,
           dt.scope,
           dt.superset,
+          dt.composition,
         ]
       })
     )
