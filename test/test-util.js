@@ -138,6 +138,10 @@ exports.matterTestFile = {
     __dirname,
     'resource/matter-api-maturity-test.zap'
   ),
+  endpointComposition: path.join(
+    __dirname,
+    'resource/matter-endpointComposition.zap'
+  ),
 }
 
 exports.testZclMetafile = path.join(__dirname, './resource/meta/zcl.json')

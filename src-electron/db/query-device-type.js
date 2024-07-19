@@ -51,7 +51,7 @@ async function selectDeviceTypeById(db, id) {
   return dbApi
     .dbGet(
       db,
-      'SELECT DEVICE_TYPE_ID, DOMAIN, CODE, PROFILE_ID, NAME, DESCRIPTION, CLASS, PACKAGE_REF FROM DEVICE_TYPE WHERE DEVICE_TYPE_ID = ?',
+      'SELECT DEVICE_TYPE_ID, DOMAIN, CODE, PROFILE_ID, NAME, DESCRIPTION, CLASS, PACKAGE_REF, COMPOSITION FROM DEVICE_TYPE WHERE DEVICE_TYPE_ID = ?',
       [id]
     )
     .then(dbMapping.map.deviceType)

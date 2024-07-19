@@ -101,8 +101,11 @@ static_assert(ATTRIBUTE_LARGEST <= CHIP_CONFIG_MAX_ATTRIBUTE_STORE_ELEMENT_SIZE,
 // Array of profile ids
 #define FIXED_PROFILE_IDS {{endpoint_fixed_profile_id_array}}
 
-/ Array of parent endpoint ids
+// Array of parent endpoint ids
 #define FIXED_PARENT_IDS {{endpoint_fixed_parent_id_array}}
+
+//Endpoint Composition
+#define COMPOSITION {{endpoint_composition}}
 
 // Array of device types
 #define FIXED_DEVICE_TYPES {{endpoint_fixed_device_type_array}}

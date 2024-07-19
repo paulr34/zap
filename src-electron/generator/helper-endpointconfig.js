@@ -113,14 +113,14 @@ function endpoint_fixed_parent_id_array(options) {
   return '{ ' + parentIds.join(', ') + ' }'
 }
 
-async function endpoint_composition(options) {
+async function endpoint_composition() {
   let dt
   let db = this.global.db
   for (const et of this.endpointTypes) {
-    dt = await queryDeviceType.selectDeviceTypeById(db, et.endpointTypeId)
+    dt = await queryDeviceType.selectDeviceTypeById(db, et.deviceTypeRef)
   }
-  if (dt.composition) {
-    return dt.composition
+  if (dt.composition != null) {
+    return '{' + dt.composition + '}'
   } else {
     return '0'
   }
