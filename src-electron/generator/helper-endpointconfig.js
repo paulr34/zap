@@ -114,16 +114,20 @@ function endpoint_fixed_parent_id_array(options) {
 }
 
 async function endpoint_composition() {
-  let dt
+  let dt = []
   let db = this.global.db
   for (const et of this.endpointTypes) {
-    dt = await queryDeviceType.selectDeviceTypeById(db, et.deviceTypeRef)
+    const result = await queryDeviceType.selectDeviceTypeById(
+      db,
+      et.deviceTypeRef
+    )
+    if (result.composition == null) {
+      dt.push('0')
+    } else {
+      dt.push(result.composition)
+    }
   }
-  if (dt.composition != null) {
-    return '{' + dt.composition + '}'
-  } else {
-    return '0'
-  }
+  return '{' + dt.join(', ') + ' }'
 }
 
 /**

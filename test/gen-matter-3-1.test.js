@@ -593,5 +593,6 @@ test(`Zap file generation: ${path.relative(
   //   that works with an older SDK.
   //
   let ept = genResult.content['endpoint_config.h']
-  expect(ept).toContain('#define COMPOSITION { tree }')
+  expect(ept).toContain('#define COMPOSITION { tree , 0 }')
+  expect(ept).toContain('#define FIXED_PARENT_IDS { kInvalidEndpointId, 1 }')
 })
