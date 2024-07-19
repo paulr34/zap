@@ -19,6 +19,7 @@ const cHelper = require('./helper-c.js')
 const templateUtil = require('./template-util')
 const queryEndpoint = require('../db/query-endpoint.js')
 const queryEndpointType = require('../db/query-endpoint-type.js')
+const queryDeviceType = require('../db/query-device-type.js')
 const queryPackage = require('../db/query-package.js')
 const bin = require('../util/bin')
 const types = require('../util/types.js')
@@ -110,6 +111,19 @@ function endpoint_fixed_parent_id_array(options) {
     }
   })
   return '{ ' + parentIds.join(', ') + ' }'
+}
+
+async function endpoint_composition(options) {
+  let dt
+  let db = this.global.db
+  for (const et of this.endpointTypes) {
+    dt = await queryDeviceType.selectDeviceTypeById(db, et.endpointTypeId)
+  }
+  if (dt.composition) {
+    return dt.composition
+  } else {
+    return '0'
+  }
 }
 
 /**
@@ -1335,3 +1349,4 @@ exports.endpoint_reporting_config_default_count =
   endpoint_reporting_config_default_count
 exports.endpoint_count = endpoint_count
 exports.endpoint_config_macros = endpoint_config_macros
+exports.endpoint_composition = endpoint_composition
