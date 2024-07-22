@@ -112,7 +112,15 @@ function endpoint_fixed_parent_id_array(options) {
   })
   return '{ ' + parentIds.join(', ') + ' }'
 }
-
+/**
+ * Asynchronously composes endpoint information into a formatted string.
+ * This function iterates over each endpoint type, queries the database for device type information,
+ * and collects the composition of each device type. If a device type's composition is null,
+ * it substitutes '0'. The collected compositions are then formatted into a string enclosed in curly braces,
+ * with each composition separated by a comma.
+ *
+ * @return A string representing the composed endpoint information, formatted with curly braces.
+ */
 async function endpoint_composition() {
   let dt = []
   let db = this.global.db
