@@ -2052,7 +2052,7 @@ limitations under the License.
         <scope>Endpoint</scope>
         <endpointComposition>
             <type> tree </type>
-            <endpoint mandatory ="true">
+            <endpoint mandatory ="true" constraint="1">
                     <deviceType>0x0071</deviceType>
             </endpoint>
         </endpointComposition>

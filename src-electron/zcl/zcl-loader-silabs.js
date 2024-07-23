@@ -1593,7 +1593,10 @@ function prepareDeviceType(deviceType) {
     superset: deviceType.superset ? deviceType.superset[0] : '',
   }
   if ('endpointComposition' in deviceType) {
-    ret.composition = deviceType.endpointComposition[0].type[0]
+    ret.type = deviceType.endpointComposition[0].type[0]
+    ret.childDeviceId =
+      deviceType.endpointComposition[0].endpoint[0].deviceType[0]
+    ret.conformance = deviceType.endpointComposition[0].endpoint
   }
   if ('clusters' in deviceType) {
     ret.clusters = []
@@ -1646,11 +1649,9 @@ function prepareDeviceType(deviceType) {
  */
 async function processDeviceTypes(db, filePath, packageId, data) {
   env.logDebug(`${filePath}, ${packageId}: ${data.length} deviceTypes.`)
-  return queryLoader.insertDeviceTypes(
-    db,
-    packageId,
-    data.map((x) => prepareDeviceType(x))
-  )
+  let deviceType = data.map((x) => prepareDeviceType(x))
+  queryLoader.insertDeviceComposition(db, packageId, deviceType)
+  return queryLoader.insertDeviceTypes(db, packageId, deviceType)
 }
 
 /**

@@ -923,6 +923,30 @@ async function insertAtomics(db, packageId, data) {
 }
 
 /**
+ * Inserts multiple device composition records into the ENDPOINT_COMPOSITION table in the database.
+ * This function is designed to handle batch insertion for efficiency.
+ *
+ * @param {*} db - The database connection object used to interact with the database.
+ * @param {*} packageId - The identifier for the package to which these device compositions belong.
+ * @param {*} deviceTypes - An array of objects representing the device compositions to be inserted.
+ *                          Each object in the array should have the following properties:
+ *                          - type: The type of the device.
+ *                          - deviceId: The identifier of the device.
+ *                          - constraint: A constraint associated with the device composition.
+ *                          - conformance: The conformance level of the device composition.
+ * @returns {Promise} A promise that resolves when all the device composition records have been successfully inserted into the database.
+ */
+async function insertDeviceComposition(db, packageId, composition) {
+  return dbApi.dbMultiInsert(
+    db,
+    'INSERT INTO ENDPOINT_COMPOSITION (PACKAGE_REF, TYPE, CODE) VALUES (?, ?, ?)',
+    composition.map((comp) => {
+      return [packageId, comp.type, comp.code]
+    })
+  )
+}
+
+/**
  * Inserts device types into the database.
  *
  * @export
@@ -935,7 +959,7 @@ async function insertDeviceTypes(db, packageId, data) {
   return dbApi
     .dbMultiInsert(
       db,
-      'INSERT INTO DEVICE_TYPE (PACKAGE_REF, DOMAIN, CODE, PROFILE_ID, NAME, DESCRIPTION, CLASS, SCOPE, SUPERSET, COMPOSITION) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO DEVICE_TYPE (PACKAGE_REF, DOMAIN, CODE, PROFILE_ID, NAME, DESCRIPTION, CLASS, SCOPE, SUPERSET) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       data.map((dt) => {
         return [
           packageId,
@@ -947,7 +971,6 @@ async function insertDeviceTypes(db, packageId, data) {
           dt.class,
           dt.scope,
           dt.superset,
-          dt.composition,
         ]
       })
     )
@@ -1994,3 +2017,4 @@ exports.insertStruct = insertStruct
 exports.insertStructItems = insertStructItems
 exports.updateDataTypeClusterReferences = updateDataTypeClusterReferences
 exports.insertAttributeMappings = insertAttributeMappings
+exports.insertDeviceComposition = insertDeviceComposition
