@@ -58,32 +58,36 @@ function user_endpoints(options) {
             )
           ),
       ])
-        .then(
-          (EptEp) =>
-            new Promise((resolve, reject) => {
-              let endpointTypeMap = {}
-              let endpointTypes = EptEp[0]
-              let endpoints = EptEp[1]
-              endpointTypes.forEach(
-                (ept) =>
-                  (endpointTypeMap[ept.endpointTypeId] = {
-                    deviceVersions: ept.deviceVersion,
-                    deviceIdentifiers: ept.deviceIdentifier,
-                    deviceCategories: ept.deviceCategory,
-                  })
-              )
-              // Adding device Identifiers and versions to endpoints from endpoint types
-              endpoints.forEach((ep) => {
-                ep.deviceIdentifier =
-                  endpointTypeMap[ep.endpointTypeRef].deviceIdentifiers
-                ep.endpointVersion =
-                  endpointTypeMap[ep.endpointTypeRef].deviceVersions
-                ep.endpointCategories =
-                  endpointTypeMap[ep.endpointTypeRef].deviceCategories
-              })
-              resolve(endpoints)
+        .then(async (endpointData) => {
+          try {
+            let endpointTypeMap = {}
+            let [endpointTypes, endpoints] = endpointData
+            let promises = endpointTypes.map(async (ept) => {
+              endpointTypeMap[ept.endpointTypeId] = {
+                deviceVersions: ept.deviceVersion,
+                deviceIdentifiers: ept.deviceIdentifier,
+                deviceCategories: ept.deviceCategory,
+              }
             })
-        )
+
+            await Promise.all(promises)
+
+            // Adding device Identifiers and versions to endpoints from endpoint types
+            endpoints.forEach((ep) => {
+              let endpointTypeInfo = endpointTypeMap[ep.endpointTypeRef]
+              if (endpointTypeInfo) {
+                ep.deviceIdentifier = endpointTypeInfo.deviceIdentifiers
+                ep.endpointVersion = endpointTypeInfo.deviceVersions
+                ep.endpointCategories = endpointTypeInfo.deviceCategories
+              }
+            })
+
+            return endpoints
+          } catch (error) {
+            console.error('Error processing endpoint data:', error)
+            throw error // Rethrow or handle as needed
+          }
+        })
         .then((endpoints) =>
           packageInfoCategory
             ? endpoints.filter(
@@ -115,7 +119,10 @@ function user_endpoints(options) {
  */
 async function user_device_types(options) {
   let promise = queryDeviceType
-    .selectDeviceTypesByEndpointTypeId(this.global.db, this.endpointTypeId)
+    .selectDeviceTypesWithCompositionByEndpointTypeId(
+      this.global.db,
+      this.endpointTypeId
+    )
     .then((deviceTypes) =>
       templateUtil.collectBlocks(deviceTypes, options, this)
     )

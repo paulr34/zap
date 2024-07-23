@@ -370,6 +370,39 @@ async function updateDeviceTypeEntityReferences(db, packageId) {
 }
 
 /**
+ * Retrieves the zcl device type information along with the COMPOSITION from the DEVICE_TYPE table
+ * based on an endpoint type id
+ * @param {*} db
+ * @param {*} endpointTypeId
+ * @returns promise with zcl device type information and COMPOSITION based on endpoint type id
+ */
+async function selectDeviceTypesWithCompositionByEndpointTypeId(
+  db,
+  endpointTypeId
+) {
+  let rows = await dbApi.dbAll(
+    db,
+    `
+  SELECT
+    ETD.ENDPOINT_TYPE_DEVICE_ID,
+    ETD.DEVICE_TYPE_REF,
+    ETD.ENDPOINT_TYPE_REF,
+    ETD.DEVICE_TYPE_ORDER,
+    ETD.DEVICE_IDENTIFIER,
+    ETD.DEVICE_VERSION,
+    DT.COMPOSITION
+  FROM
+    ENDPOINT_TYPE_DEVICE AS ETD
+  JOIN
+    DEVICE_TYPE AS DT ON ETD.DEVICE_TYPE_REF = DT.DEVICE_TYPE_ID
+  WHERE
+    ETD.ENDPOINT_TYPE_REF = ?`,
+    [endpointTypeId]
+  )
+  return rows.map(dbMapping.map.endpointTypeDeviceExtended)
+}
+
+/**
  * Retrieves the zcl device type information based on an endpoint type id
  * @param {*} db
  * @param {*} endpointTypeId
@@ -467,3 +500,5 @@ exports.updateDeviceTypeEntityReferences = updateDeviceTypeEntityReferences
 exports.selectDeviceTypesByEndpointTypeId = selectDeviceTypesByEndpointTypeId
 exports.selectDeviceTypeFeaturesByEndpointTypeIdAndClusterId =
   selectDeviceTypeFeaturesByEndpointTypeIdAndClusterId
+exports.selectDeviceTypesWithCompositionByEndpointTypeId =
+  selectDeviceTypesWithCompositionByEndpointTypeId

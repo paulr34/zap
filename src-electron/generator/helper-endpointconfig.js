@@ -112,31 +112,6 @@ function endpoint_fixed_parent_id_array(options) {
   })
   return '{ ' + parentIds.join(', ') + ' }'
 }
-/**
- * Asynchronously composes endpoint information into a formatted string.
- * This function iterates over each endpoint type, queries the database for device type information,
- * and collects the composition of each device type. If a device type's composition is null,
- * it substitutes '0'. The collected compositions are then formatted into a string enclosed in curly braces,
- * with each composition separated by a comma.
- *
- * @return A string representing the composed endpoint information, formatted with curly braces.
- */
-async function endpoint_composition() {
-  let dt = []
-  let db = this.global.db
-  for (const et of this.endpointTypes) {
-    const result = await queryDeviceType.selectDeviceTypeById(
-      db,
-      et.deviceTypeRef
-    )
-    if (result.composition == null) {
-      dt.push('0')
-    } else {
-      dt.push(result.composition)
-    }
-  }
-  return '{' + dt.join(', ') + ' }'
-}
 
 /**
  * Creates array of networkId fields on endpoints
@@ -1361,4 +1336,3 @@ exports.endpoint_reporting_config_default_count =
   endpoint_reporting_config_default_count
 exports.endpoint_count = endpoint_count
 exports.endpoint_config_macros = endpoint_config_macros
-exports.endpoint_composition = endpoint_composition
