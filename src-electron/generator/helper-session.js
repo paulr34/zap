@@ -58,36 +58,32 @@ function user_endpoints(options) {
             )
           ),
       ])
-        .then(async (endpointData) => {
-          try {
-            let endpointTypeMap = {}
-            let [endpointTypes, endpoints] = endpointData
-            let promises = endpointTypes.map(async (ept) => {
-              endpointTypeMap[ept.endpointTypeId] = {
-                deviceVersions: ept.deviceVersion,
-                deviceIdentifiers: ept.deviceIdentifier,
-                deviceCategories: ept.deviceCategory,
-              }
+        .then(
+          (EptEp) =>
+            new Promise((resolve, reject) => {
+              let endpointTypeMap = {}
+              let endpointTypes = EptEp[0]
+              let endpoints = EptEp[1]
+              endpointTypes.forEach(
+                (ept) =>
+                  (endpointTypeMap[ept.endpointTypeId] = {
+                    deviceVersions: ept.deviceVersion,
+                    deviceIdentifiers: ept.deviceIdentifier,
+                    deviceCategories: ept.deviceCategory,
+                  })
+              )
+              // Adding device Identifiers and versions to endpoints from endpoint types
+              endpoints.forEach((ep) => {
+                ep.deviceIdentifier =
+                  endpointTypeMap[ep.endpointTypeRef].deviceIdentifiers
+                ep.endpointVersion =
+                  endpointTypeMap[ep.endpointTypeRef].deviceVersions
+                ep.endpointCategories =
+                  endpointTypeMap[ep.endpointTypeRef].deviceCategories
+              })
+              resolve(endpoints)
             })
-
-            await Promise.all(promises)
-
-            // Adding device Identifiers and versions to endpoints from endpoint types
-            endpoints.forEach((ep) => {
-              let endpointTypeInfo = endpointTypeMap[ep.endpointTypeRef]
-              if (endpointTypeInfo) {
-                ep.deviceIdentifier = endpointTypeInfo.deviceIdentifiers
-                ep.endpointVersion = endpointTypeInfo.deviceVersions
-                ep.endpointCategories = endpointTypeInfo.deviceCategories
-              }
-            })
-
-            return endpoints
-          } catch (error) {
-            console.error('Error processing endpoint data:', error)
-            throw error // Rethrow or handle as needed
-          }
-        })
+        )
         .then((endpoints) =>
           packageInfoCategory
             ? endpoints.filter(
@@ -126,7 +122,6 @@ async function user_device_types(options) {
     .then((deviceTypes) =>
       templateUtil.collectBlocks(deviceTypes, options, this)
     )
-
   return templateUtil.templatePromise(this.global, promise)
 }
 
@@ -171,6 +166,7 @@ function user_cluster_attributes(options) {
   let promise = queryImpexp
     .exportAttributesFromEndpointTypeCluster(
       this.global.db,
+      this.parent.endpointTypeId,
       this.endpointClusterId
     )
     .then((endpointAttributes) =>
@@ -208,7 +204,11 @@ function user_cluster_commands(options) {
  */
 function user_cluster_events(options) {
   let promise = queryImpexp
-    .exportEventsFromEndpointTypeCluster(this.global.db, this.endpointClusterId)
+    .exportEventsFromEndpointTypeCluster(
+      this.global.db,
+      this.parent.endpointTypeId,
+      this.endpointClusterId
+    )
     .then((endpointEvents) =>
       templateUtil.collectBlocks(endpointEvents, options, this)
     )
