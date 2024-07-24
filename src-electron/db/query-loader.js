@@ -936,12 +936,39 @@ async function insertAtomics(db, packageId, data) {
  *                          - conformance: The conformance level of the device composition.
  * @returns {Promise} A promise that resolves when all the device composition records have been successfully inserted into the database.
  */
-async function insertDeviceComposition(db, packageId, composition) {
+async function insertEndpointComposition(db, packageId, composition) {
   return dbApi.dbMultiInsert(
     db,
     'INSERT INTO ENDPOINT_COMPOSITION (PACKAGE_REF, TYPE, CODE) VALUES (?, ?, ?)',
     composition.map((comp) => {
       return [packageId, comp.type, comp.code]
+    })
+  )
+}
+/**
+ * Retrieves the primary key (ENDPOINT_COMPOSITION_ID) for a given CODE from the ENDPOINT_COMPOSITION table.
+ * @param {Object} db - The database connection object.
+ * @param {string} code - The CODE of the endpoint composition to find.
+ * @returns {Promise<number>} A promise that resolves with the ENDPOINT_COMPOSITION_ID of the given CODE.
+ */
+async function getEndpointCompositionIdByCode(db, code) {
+  const query =
+    'SELECT ENDPOINT_COMPOSITION_ID FROM ENDPOINT_COMPOSITION WHERE CODE = ? AND PACKAGE_REF = ?'
+  const result = await dbApi.dbGet(db, query, [code])
+  return result ? result.ENDPOINT_COMPOSITION_ID : null
+}
+
+async function insertDeviceComposition(
+  db,
+  packageId,
+  deviceType,
+  endpointCompositionId
+) {
+  return dbApi.dbMultiInsert(
+    db,
+    'INSERT INTO DEVICE_COMPOSITION (PACKAGE_REF, DEVICE_REF, ENDPOINT_COMPOSITION_REF) VALUES (?, ?, ?)',
+    deviceType.map((comp) => {
+      return [packageId, comp.childDeviceId, endpointCompositionId]
     })
   )
 }
@@ -2017,4 +2044,6 @@ exports.insertStruct = insertStruct
 exports.insertStructItems = insertStructItems
 exports.updateDataTypeClusterReferences = updateDataTypeClusterReferences
 exports.insertAttributeMappings = insertAttributeMappings
+exports.insertEndpointComposition = insertEndpointComposition
 exports.insertDeviceComposition = insertDeviceComposition
+exports.getEndpointCompositionIdByCode = getEndpointCompositionIdByCode

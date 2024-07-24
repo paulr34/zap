@@ -1596,7 +1596,7 @@ function prepareDeviceType(deviceType) {
     ret.type = deviceType.endpointComposition[0].type[0]
     ret.childDeviceId =
       deviceType.endpointComposition[0].endpoint[0].deviceType[0]
-    ret.conformance = deviceType.endpointComposition[0].endpoint
+    console.log(ret)
   }
   if ('clusters' in deviceType) {
     ret.clusters = []
@@ -1650,7 +1650,18 @@ function prepareDeviceType(deviceType) {
 async function processDeviceTypes(db, filePath, packageId, data) {
   env.logDebug(`${filePath}, ${packageId}: ${data.length} deviceTypes.`)
   let deviceType = data.map((x) => prepareDeviceType(x))
-  queryLoader.insertDeviceComposition(db, packageId, deviceType)
+  await queryLoader.insertEndpointComposition(db, packageId, deviceType)
+  let endpointCompositionId = await queryLoader.getEndpointCompositionIdByCode(
+    db,
+    packageId,
+    deviceType
+  )
+  queryLoader.insertDeviceComposition(
+    db,
+    packageId,
+    deviceType,
+    endpointCompositionId
+  )
   return queryLoader.insertDeviceTypes(db, packageId, deviceType)
 }
 
