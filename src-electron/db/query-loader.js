@@ -937,12 +937,10 @@ async function insertAtomics(db, packageId, data) {
  * @returns {Promise} A promise that resolves when all the device composition records have been successfully inserted into the database.
  */
 async function insertEndpointComposition(db, packageId, composition) {
-  return dbApi.dbMultiInsert(
+  return dbApi.dbInsert(
     db,
     'INSERT INTO ENDPOINT_COMPOSITION (PACKAGE_REF, TYPE, CODE) VALUES (?, ?, ?)',
-    composition.map((comp) => {
-      return [packageId, comp.type, comp.code]
-    })
+    [packageId, composition.type, composition.code]
   )
 }
 /**
@@ -951,10 +949,10 @@ async function insertEndpointComposition(db, packageId, composition) {
  * @param {string} code - The CODE of the endpoint composition to find.
  * @returns {Promise<number>} A promise that resolves with the ENDPOINT_COMPOSITION_ID of the given CODE.
  */
-async function getEndpointCompositionIdByCode(db, code) {
+async function getEndpointCompositionIdByCode(db, deviceType, packageId) {
   const query =
     'SELECT ENDPOINT_COMPOSITION_ID FROM ENDPOINT_COMPOSITION WHERE CODE = ? AND PACKAGE_REF = ?'
-  const result = await dbApi.dbGet(db, query, [code])
+  const result = await dbApi.dbGet(db, query, [deviceType.code, packageId])
   return result ? result.ENDPOINT_COMPOSITION_ID : null
 }
 
@@ -964,13 +962,18 @@ async function insertDeviceComposition(
   deviceType,
   endpointCompositionId
 ) {
-  return dbApi.dbMultiInsert(
-    db,
-    'INSERT INTO DEVICE_COMPOSITION (PACKAGE_REF, DEVICE_REF, ENDPOINT_COMPOSITION_REF) VALUES (?, ?, ?)',
-    deviceType.map((comp) => {
-      return [packageId, comp.childDeviceId, endpointCompositionId]
-    })
-  )
+  // Define the insert query
+  const insertQuery = `
+    INSERT INTO DEVICE_COMPOSITION (PACKAGE_REF, DEVICE_REF, ENDPOINT_COMPOSITION_REF)
+    VALUES (?, ?, ?)
+  `
+  console.log(deviceType.childDeviceId, endpointCompositionId)
+  // Execute the insert query without checking if IDs are defined
+  return dbApi.dbInsert(db, insertQuery, [
+    packageId,
+    deviceType.childDeviceId,
+    endpointCompositionId,
+  ])
 }
 
 /**

@@ -1591,12 +1591,12 @@ function prepareDeviceType(deviceType) {
     class: deviceType.class ? deviceType.class[0] : '',
     scope: deviceType.scope ? deviceType.scope[0] : '',
     superset: deviceType.superset ? deviceType.superset[0] : '',
+    type: null,
   }
   if ('endpointComposition' in deviceType) {
     ret.type = deviceType.endpointComposition[0].type[0]
     ret.childDeviceId =
       deviceType.endpointComposition[0].endpoint[0].deviceType[0]
-    console.log(ret)
   }
   if ('clusters' in deviceType) {
     ret.clusters = []
@@ -1649,20 +1649,25 @@ function prepareDeviceType(deviceType) {
  */
 async function processDeviceTypes(db, filePath, packageId, data) {
   env.logDebug(`${filePath}, ${packageId}: ${data.length} deviceTypes.`)
-  let deviceType = data.map((x) => prepareDeviceType(x))
-  await queryLoader.insertEndpointComposition(db, packageId, deviceType)
-  let endpointCompositionId = await queryLoader.getEndpointCompositionIdByCode(
-    db,
-    packageId,
-    deviceType
-  )
-  queryLoader.insertDeviceComposition(
-    db,
-    packageId,
-    deviceType,
-    endpointCompositionId
-  )
-  return queryLoader.insertDeviceTypes(db, packageId, deviceType)
+  let deviceTypes = data.map((x) => prepareDeviceType(x))
+  for (let deviceType of deviceTypes) {
+    if (deviceType.type != null) {
+      await queryLoader.insertEndpointComposition(db, packageId, deviceType)
+      let endpointCompositionId =
+        await queryLoader.getEndpointCompositionIdByCode(
+          db,
+          deviceType,
+          packageId
+        )
+      queryLoader.insertDeviceComposition(
+        db,
+        packageId,
+        deviceType,
+        endpointCompositionId
+      )
+    }
+  }
+  return queryLoader.insertDeviceTypes(db, packageId, deviceTypes)
 }
 
 /**

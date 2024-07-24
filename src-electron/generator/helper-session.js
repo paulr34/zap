@@ -33,6 +33,7 @@ const helperZcl = require('./helper-zcl.js')
 const dbEnum = require('../../src-shared/db-enum.js')
 const iteratorUtil = require('../util/iterator-util.js')
 const queryDeviceType = require('../db/query-device-type.js')
+const queryLoader = require('../db/query-loader.js')
 
 /**
  * Creates block iterator over the endpoints.
