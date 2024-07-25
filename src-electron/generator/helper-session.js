@@ -167,7 +167,6 @@ function user_cluster_attributes(options) {
   let promise = queryImpexp
     .exportAttributesFromEndpointTypeCluster(
       this.global.db,
-      this.parent.endpointTypeId,
       this.endpointClusterId
     )
     .then((endpointAttributes) =>
@@ -205,11 +204,7 @@ function user_cluster_commands(options) {
  */
 function user_cluster_events(options) {
   let promise = queryImpexp
-    .exportEventsFromEndpointTypeCluster(
-      this.global.db,
-      this.parent.endpointTypeId,
-      this.endpointClusterId
-    )
+    .exportEventsFromEndpointTypeCluster(this.global.db, this.endpointClusterId)
     .then((endpointEvents) =>
       templateUtil.collectBlocks(endpointEvents, options, this)
     )

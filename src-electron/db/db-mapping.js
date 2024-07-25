@@ -407,7 +407,6 @@ exports.map = {
       caption: x.DESCRIPTION,
       class: x.CLASS,
       packageRef: x.PACKAGE_REF,
-      composition: x.COMPOSITION,
     }
   },
 
@@ -561,7 +560,6 @@ exports.map = {
       featureName: x.FEATURE_NAME,
       featureBit: x.FEATURE_BIT,
       clusterId: x.CLUSTER_REF,
-      composition: x.TYPE,
     }
   },
   endpointTypeCluster: (x) => {
