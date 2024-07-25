@@ -923,14 +923,14 @@ async function insertAtomics(db, packageId, data) {
 }
 
 /**
- * Asynchronously inserts a new endpoint composition into the database.
+ * Inserts a new endpoint composition into the database.
  *
  * @param {Object} db - The database connection object.
  * @param {number} packageId - The ID of the package to which this endpoint composition belongs.
  * @param {Object} composition - An object containing the 'type' and 'code' of the endpoint composition.
  * @returns {Promise} A promise that resolves with the result of the database insertion operation.
  */
-async function insertEndpointComposition(db, packageId, composition) {
+function insertEndpointComposition(db, packageId, composition) {
   return dbApi.dbInsert(
     db,
     'INSERT INTO ENDPOINT_COMPOSITION (PACKAGE_REF, TYPE, CODE) VALUES (?, ?, ?)',
@@ -954,7 +954,7 @@ async function getEndpointCompositionIdByCode(db, deviceType, packageId) {
 }
 
 /**
- * Asynchronously inserts a new device composition record into the database.
+ * Inserts a new device composition record into the database.
  *
  * @param {Object} db - The database connection object.
  * @param {number} packageId - The ID of the package associated with this device composition.
@@ -963,7 +963,7 @@ async function getEndpointCompositionIdByCode(db, deviceType, packageId) {
  * @returns {Promise} A promise that resolves with the result of the database insertion operation.
  */
 
-async function insertDeviceComposition(
+function insertDeviceComposition(
   db,
   packageId,
   deviceType,
