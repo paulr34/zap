@@ -923,18 +923,12 @@ async function insertAtomics(db, packageId, data) {
 }
 
 /**
- * Inserts multiple device composition records into the ENDPOINT_COMPOSITION table in the database.
- * This function is designed to handle batch insertion for efficiency.
+ * Asynchronously inserts a new endpoint composition into the database.
  *
- * @param {*} db - The database connection object used to interact with the database.
- * @param {*} packageId - The identifier for the package to which these device compositions belong.
- * @param {*} deviceTypes - An array of objects representing the device compositions to be inserted.
- *                          Each object in the array should have the following properties:
- *                          - type: The type of the device.
- *                          - deviceId: The identifier of the device.
- *                          - constraint: A constraint associated with the device composition.
- *                          - conformance: The conformance level of the device composition.
- * @returns {Promise} A promise that resolves when all the device composition records have been successfully inserted into the database.
+ * @param {Object} db - The database connection object.
+ * @param {number} packageId - The ID of the package to which this endpoint composition belongs.
+ * @param {Object} composition - An object containing the 'type' and 'code' of the endpoint composition.
+ * @returns {Promise} A promise that resolves with the result of the database insertion operation.
  */
 async function insertEndpointComposition(db, packageId, composition) {
   return dbApi.dbInsert(
@@ -943,11 +937,14 @@ async function insertEndpointComposition(db, packageId, composition) {
     [packageId, composition.type, composition.code]
   )
 }
+
 /**
- * Retrieves the primary key (ENDPOINT_COMPOSITION_ID) for a given CODE from the ENDPOINT_COMPOSITION table.
+ * Asynchronously retrieves the ID of an endpoint composition based on its code and associated package ID.
+ *
  * @param {Object} db - The database connection object.
- * @param {string} code - The CODE of the endpoint composition to find.
- * @returns {Promise<number>} A promise that resolves with the ENDPOINT_COMPOSITION_ID of the given CODE.
+ * @param {Object} deviceType - An object representing the device type, which contains the 'code' property.
+ * @param {number} packageId - The ID of the package associated with the endpoint composition.
+ * @returns {Promise<number|null>} A promise that resolves with the ID of the endpoint composition if found, or null otherwise.
  */
 async function getEndpointCompositionIdByCode(db, deviceType, packageId) {
   const query =
@@ -955,6 +952,16 @@ async function getEndpointCompositionIdByCode(db, deviceType, packageId) {
   const result = await dbApi.dbGet(db, query, [deviceType.code, packageId])
   return result ? result.ENDPOINT_COMPOSITION_ID : null
 }
+
+/**
+ * Asynchronously inserts a new device composition record into the database.
+ *
+ * @param {Object} db - The database connection object.
+ * @param {number} packageId - The ID of the package associated with this device composition.
+ * @param {Object} deviceType - An object representing the device type, which contains the 'childDeviceId' property.
+ * @param {number} endpointCompositionId - The ID of the endpoint composition associated with this device composition.
+ * @returns {Promise} A promise that resolves with the result of the database insertion operation.
+ */
 
 async function insertDeviceComposition(
   db,

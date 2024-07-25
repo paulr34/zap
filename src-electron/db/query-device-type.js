@@ -370,11 +370,14 @@ async function updateDeviceTypeEntityReferences(db, packageId) {
 }
 
 /**
- * Retrieves the zcl device type information along with the COMPOSITION from the DEVICE_TYPE table
- * based on an endpoint type id
- * @param {*} db
- * @param {*} endpointTypeId
- * @returns promise with zcl device type information and COMPOSITION based on endpoint type id
+ * Asynchronously selects device types with their compositions by a specific endpoint type ID.
+ *
+ * This function queries the database for device types associated with a given endpoint type ID,
+ * including details about the device type and any endpoint compositions linked to it.
+ *
+ * @param {Object} db - The database connection object.
+ * @param {number} endpointTypeId - The ID of the endpoint type used to filter the device types.
+ * @returns {Promise<Array>} A promise that resolves with an array of device types and their compositions.
  */
 async function selectDeviceTypesWithCompositionByEndpointTypeId(
   db,
