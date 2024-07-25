@@ -2051,7 +2051,7 @@ limitations under the License.
         <class>Simple</class>
         <scope>Endpoint</scope>
         <endpointComposition>
-            <type> tree </type>
+            <compositionType> tree </compositionType>
             <endpoint mandatory ="true" constraint="1">
                     <deviceType>0x0071</deviceType>
             </endpoint>

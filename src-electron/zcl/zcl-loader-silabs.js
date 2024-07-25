@@ -1591,12 +1591,16 @@ function prepareDeviceType(deviceType) {
     class: deviceType.class ? deviceType.class[0] : '',
     scope: deviceType.scope ? deviceType.scope[0] : '',
     superset: deviceType.superset ? deviceType.superset[0] : '',
-    type: null,
+    compositionType: null,
   }
   if ('endpointComposition' in deviceType) {
-    ret.type = deviceType.endpointComposition[0].type[0]
-    ret.childDeviceId =
-      deviceType.endpointComposition[0].endpoint[0].deviceType[0]
+    try {
+      ret.compositionType = deviceType.endpointComposition[0].type[0]
+      ret.childDeviceId =
+        deviceType.endpointComposition[0].endpoint[0].deviceType[0]
+    } catch (error) {
+      console.error('Error processing endpoint composition:', error)
+    }
   }
   if ('clusters' in deviceType) {
     ret.clusters = []
@@ -1659,7 +1663,7 @@ async function processDeviceTypes(db, filePath, packageId, data) {
           deviceType,
           packageId
         )
-      queryLoader.insertDeviceComposition(
+      await queryLoader.insertDeviceComposition(
         db,
         packageId,
         deviceType,

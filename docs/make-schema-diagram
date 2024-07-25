@@ -13,9 +13,9 @@
 # You can set env variables such as:
 #   SC_HOME=/opt/schemacrawler
 if [ -z "$SC_HOME" ]; then
-  SC_HOME=~/schemacrawler/
+  SC_HOME=~/schemacrawler/latest
 fi
-SC_BIN=${SC_HOME}/bin/schemacrawler.sh
+SC_BIN=${SC_HOME}/_schemacrawler/bin/schemacrawler.sh
 
 SQLITE=~/.zap/self-check.sqlite
 SVG=zap-schema.svg
