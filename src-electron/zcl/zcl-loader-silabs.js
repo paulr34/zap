@@ -1595,7 +1595,7 @@ function prepareDeviceType(deviceType) {
   }
   if ('endpointComposition' in deviceType) {
     try {
-      ret.compositionType = deviceType.endpointComposition[0].type[0]
+      ret.compositionType = deviceType.endpointComposition[0].compositionType[0]
       ret.childDeviceId =
         deviceType.endpointComposition[0].endpoint[0].deviceType[0]
     } catch (error) {
@@ -1655,7 +1655,7 @@ async function processDeviceTypes(db, filePath, packageId, data) {
   env.logDebug(`${filePath}, ${packageId}: ${data.length} deviceTypes.`)
   let deviceTypes = data.map((x) => prepareDeviceType(x))
   for (let deviceType of deviceTypes) {
-    if (deviceType.type != null) {
+    if (deviceType.compositionType != null) {
       await queryLoader.insertEndpointComposition(db, packageId, deviceType)
       let endpointCompositionId =
         await queryLoader.getEndpointCompositionIdByCode(

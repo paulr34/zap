@@ -934,7 +934,7 @@ function insertEndpointComposition(db, packageId, composition) {
   return dbApi.dbInsert(
     db,
     'INSERT INTO ENDPOINT_COMPOSITION (PACKAGE_REF, TYPE, CODE) VALUES (?, ?, ?)',
-    [packageId, composition.type, composition.code]
+    [packageId, composition.compositionType, composition.code]
   )
 }
 
@@ -969,13 +969,10 @@ function insertDeviceComposition(
   deviceType,
   endpointCompositionId
 ) {
-  // Define the insert query
   const insertQuery = `
     INSERT INTO DEVICE_COMPOSITION (PACKAGE_REF, DEVICE_REF, ENDPOINT_COMPOSITION_REF)
     VALUES (?, ?, ?)
   `
-  console.log(deviceType.childDeviceId, endpointCompositionId)
-  // Execute the insert query without checking if IDs are defined
   return dbApi.dbInsert(db, insertQuery, [
     packageId,
     deviceType.childDeviceId,
