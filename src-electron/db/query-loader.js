@@ -970,7 +970,7 @@ function insertDeviceComposition(
   endpointCompositionId
 ) {
   const insertQuery = `
-    INSERT INTO DEVICE_COMPOSITION (PACKAGE_REF, DEVICE_REF, ENDPOINT_COMPOSITION_REF)
+    INSERT INTO DEVICE_COMPOSITION (PACKAGE_REF, CODE, ENDPOINT_COMPOSITION_REF)
     VALUES (?, ?, ?)
   `
   return dbApi.dbInsert(db, insertQuery, [
