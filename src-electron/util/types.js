@@ -156,6 +156,20 @@ function convertIntToBigEndian(value, size) {
   return '0x' + res
 }
 
+function nullStringDefaultValue(type) {
+  // We don't want to make longTypeDefaultValue know about our null
+  // string representation.
+  let def
+  if (isOneBytePrefixedString(type)) {
+    def = '0xFF,'
+  } else if (isTwoBytePrefixedString(type)) {
+    def = '0xFF, 0xFF,'
+  } else {
+    throw new Error(`Unknown string type: ${type}`)
+  }
+  return def
+}
+
 /**
  * If the type is more than 2 bytes long, then this method creates
  * the default byte array.
@@ -420,3 +434,4 @@ exports.convertFloatToBigEndian = convertFloatToBigEndian
 exports.getSignAndSizeOfZclType = getSignAndSizeOfZclType
 exports.intToHexString = intToHexString
 exports.hexStringToInt = hexStringToInt
+exports.nullStringDefaultValue = nullStringDefaultValue
