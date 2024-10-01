@@ -460,8 +460,8 @@ export function updateEndpoint(context, endpoint) {
  * @param {Object} context - The Vuex context object.
  * @returns {Promise<void>} - A promise that resolves when the composition is loaded.
  */
-export async function loadComposition(context) {
-  let res = await axiosRequests.$serverGet(restApi.uri.loadComposition)
+export async function loadInitialComposition(context) {
+  let res = await axiosRequests.$serverGet(restApi.uri.loadInitialComposition)
 
   // Check if the response data is empty or undefined
   if (!res.data) {

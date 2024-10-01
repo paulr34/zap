@@ -231,7 +231,7 @@ export default defineComponent({
       this.$store.commit('zap/toggleShowExceptionIcon', false)
     },
     async loadInitialEndpoints() {
-      let endpoint = await this.$store.dispatch('zap/loadComposition')
+      let endpoint = await this.$store.dispatch('zap/loadInitialComposition')
       if (endpoint) {
         this.$store.dispatch('zap/updateSelectedEndpointType', {
           endpointType: this.endpointType[endpoint.id],

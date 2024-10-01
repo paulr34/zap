@@ -256,7 +256,7 @@ function httpPatchEndpointType(db) {
 }
 exports.get = [
   {
-    uri: restApi.uri.loadComposition,
+    uri: restApi.uri.loadInitialComposition,
     callback: httpGetInitialComposition
   }
 ]
