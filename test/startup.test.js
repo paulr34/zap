@@ -81,7 +81,8 @@ afterAll(async () => {
     originalContentLightMatter,
     'utf-8'
   )
-})
+  await dbApi.closeDatabase(db)
+}, testUtil.timeout.short())
 
 test(
   'startup: start generation',

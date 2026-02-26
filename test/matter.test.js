@@ -17,6 +17,8 @@ beforeAll(async () => {
   zclPackageId = ctx.packageId
 }, testUtil.timeout.long())
 
+afterAll(() => dbApi.closeDatabase(db), testUtil.timeout.short())
+
 test(
   'forced external',
   async () => {

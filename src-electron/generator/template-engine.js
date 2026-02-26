@@ -246,23 +246,26 @@ async function produceContent(
   // Render the template but if it does not render within
   // TEMPLATE_RENDER_TIMEOUT then throw an error instead of just hanging
   // forever.
+  let timeoutId
   try {
     // Attempt to render the template
     content = await Promise.race([
       template(context),
-      new Promise((_, reject) =>
-        setTimeout(
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(
           () => reject(new Error('Template rendering timed out')),
           TEMPLATE_RENDER_TIMEOUT
         )
-      )
+      })
     ])
+    clearTimeout(timeoutId)
     // Render deferred blocks (parallel; order preserved by Promise.all)
     const deferredParts = await Promise.all(
       context.global.deferredBlocks.map((block) => block(context))
     )
     content += deferredParts.join('')
   } catch (error) {
+    clearTimeout(timeoutId)
     // Log the error and throw it
     notification.setNotification(
       db,
