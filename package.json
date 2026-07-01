@@ -39,6 +39,7 @@
     "test:e2e-ci": "cross-env NODE_ENV=test CYPRESS_COVERAGE=true node src-script/zap-uitest.js run zigbee",
     "test:e2e-coverage": "npm run test:e2e-ci && npm run coverage:combine",
     "coverage:combine": "node src-script/zap-combine-reports.js",
+    "sonar": "sonar-scanner -Dsonar.host.url=https://sonarqube.silabs.net/ -Dsonar.login=$SONAR_TOKEN -Dsonar.token=$SONAR_TOKEN -Dsonar.branch.name=$SONAR_BRANCH",
     "test:coverage": "npm run test:unit:coverage && npm run test:e2e-ci && npm run coverage:combine",
     "test:e2e-matter": "node src-script/zap-uitest.js open matter",
     "test:e2e-matter-ci": "node src-script/zap-uitest.js run matter",
