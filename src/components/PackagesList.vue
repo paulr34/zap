@@ -110,8 +110,8 @@ export default {
       }
     },
     getFileName(path) {
-      let fileName = path.match(/[^/]+$/)
-      return fileName.length > 0 ? fileName[0] : path
+      let fileName = path.substring(path.lastIndexOf('/') + 1)
+      return fileName.length > 0 ? fileName : path
     }
   }
 }

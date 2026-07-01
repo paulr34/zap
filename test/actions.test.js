@@ -438,4 +438,163 @@ describe('zap actions', () => {
       }
     })
   })
+
+  // Flush pending microtasks so fire-and-forget promise callbacks execute.
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+  describe('commit-only UI state actions', () => {
+    it('setLeftDrawerState / setDebugNavBar / setStandalone / setDefaultUiMode', () => {
+      actions.setLeftDrawerState(context, true)
+      expect(context.commit).toHaveBeenCalledWith('setLeftDrawerState', true)
+      actions.setDebugNavBar(context, false)
+      expect(context.commit).toHaveBeenCalledWith('setDebugNavBar', false)
+      actions.setStandalone(context, true)
+      expect(context.commit).toHaveBeenCalledWith('setStandalone', true)
+      actions.setDefaultUiMode(context, 'zigbee')
+      expect(context.commit).toHaveBeenCalledWith('setDefaultUiMode', 'zigbee')
+    })
+
+    it('attribute editing actions', () => {
+      actions.setAttributeEditting(context, { id: 1 })
+      expect(context.commit).toHaveBeenCalledWith('setAttributeEditting', {
+        id: 1
+      })
+      actions.setAttributeReportingEditting(context, { id: 2 })
+      expect(context.commit).toHaveBeenCalledWith(
+        'setAttributeReportingEditting',
+        { id: 2 }
+      )
+    })
+
+    it('filter and domain actions', () => {
+      actions.setOpenDomain(context, { domainName: 'General', value: true })
+      expect(context.commit).toHaveBeenCalledWith('setOpenDomain', {
+        domainName: 'General',
+        value: true
+      })
+      actions.setDomainFilter(context, { filter: {} })
+      expect(context.commit).toHaveBeenCalledWith('setDomainFilter', {
+        filter: {}
+      })
+      actions.doActionFilter(context, { filter: {} })
+      expect(context.commit).toHaveBeenCalledWith('doActionFilter', {
+        filter: {}
+      })
+      actions.setFilterString(context, 'foo')
+      expect(context.commit).toHaveBeenCalledWith('setFilterString', 'foo')
+      actions.setIndividualClusterFilterString(context, 'bar')
+      expect(context.commit).toHaveBeenCalledWith(
+        'setIndividualClusterFilterString',
+        'bar'
+      )
+      actions.setLastSelectedDomain(context, 'General')
+      expect(context.commit).toHaveBeenCalledWith(
+        'setLastSelectedDomain',
+        'General'
+      )
+      actions.clearLastSelectedDomain(context)
+      expect(context.commit).toHaveBeenCalledWith('clearLastSelectedDomain')
+      actions.resetFilters(context)
+      expect(context.commit).toHaveBeenCalledWith('resetFilters')
+    })
+  })
+
+  describe('list-transforming actions', () => {
+    it('setClusterList splits enabled clients/servers', () => {
+      actions.setClusterList(context, [
+        { enabled: true, side: 'client', clusterRef: 1 },
+        { enabled: true, side: 'server', clusterRef: 2 },
+        { enabled: false, side: 'server', clusterRef: 3 }
+      ])
+      expect(context.commit).toHaveBeenCalledWith('setClusterList', {
+        clients: [1],
+        servers: [2]
+      })
+    })
+
+    it('setRecommendedClusterList computes recommended/optional', () => {
+      actions.setRecommendedClusterList(context, [
+        {
+          clusterRef: 1,
+          includeClient: true,
+          includeServer: false,
+          lockClient: true,
+          lockServer: false
+        }
+      ])
+      expect(context.commit).toHaveBeenCalledWith('setRecommendedClusterList', {
+        recommendedClients: [1],
+        recommendedServers: [],
+        optionalClients: [],
+        optionalServers: [1]
+      })
+    })
+
+    it('setRequiredAttributes and setRequiredCommands', () => {
+      actions.setRequiredAttributes(context, [
+        { attributeRef: 5 },
+        { somethingElse: 1 }
+      ])
+      expect(context.commit).toHaveBeenCalledWith('setRequiredAttributesList', {
+        requiredAttributes: [5]
+      })
+      actions.setRequiredCommands(context, [{ commandRef: 7 }])
+      expect(context.commit).toHaveBeenCalledWith('setRequiredCommandsList', {
+        requiredCommands: [7]
+      })
+    })
+  })
+
+  describe('server-backed actions', () => {
+    it('updateSelectedServers posts and commits inclusion list', async () => {
+      const ctx2 = { added: true, id: 1, endpointTypeId: 2 }
+      await actions.updateSelectedServers(context, ctx2)
+      expect(context.commit).toHaveBeenCalledWith('updateInclusionList', ctx2)
+    })
+
+    it('updateSelectedClients posts and commits inclusion list', async () => {
+      const ctx2 = { added: false, id: 1, endpointTypeId: 2 }
+      await actions.updateSelectedClients(context, ctx2)
+      expect(context.commit).toHaveBeenCalledWith('updateInclusionList', ctx2)
+    })
+
+    it('setRequiredElements posts and commits', async () => {
+      await actions.setRequiredElements(context, { featureMap: {} })
+      expect(context.commit).toHaveBeenCalledWith(
+        'setRequiredElements',
+        expect.anything()
+      )
+    })
+
+    it('updateUcComponentState and updateSelectedUcComponentState commit', () => {
+      actions.updateUcComponentState(context, [{ id: 'zigbee_basic' }])
+      expect(context.commit).toHaveBeenCalledWith(
+        'updateUcComponentState',
+        expect.objectContaining({ ucComponents: expect.any(Array) })
+      )
+      actions.updateSelectedUcComponentState(context, [{ id: 'zigbee_basic' }])
+      expect(context.commit).toHaveBeenCalledWith(
+        'updateSelectedUcComponentState',
+        expect.objectContaining({ selectedUcComponents: expect.any(Array) })
+      )
+    })
+
+    it('loadZclClusterToUcComponentDependencyMap gets and commits', async () => {
+      actions.loadZclClusterToUcComponentDependencyMap(context)
+      await flush()
+      expect(context.commit).toHaveBeenCalledWith(
+        'loadZclClusterToUcComponentDependencyMap',
+        undefined
+      )
+    })
+
+    it('shareClusterStatesAcrossEndpoints posts without throwing', async () => {
+      expect(() =>
+        actions.shareClusterStatesAcrossEndpoints(context, {
+          endpointTypeIdList: [1, 2]
+        })
+      ).not.toThrow()
+      await flush()
+    })
+  })
 })
