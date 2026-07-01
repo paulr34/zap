@@ -1,6 +1,6 @@
 {
   "fileFormat": 2,
-  "featureLevel": 110,
+  "featureLevel": 103,
   "creator": "zap",
   "keyValuePairs": [
     {
@@ -19,18 +19,18 @@
   "package": [
     {
       "pathRelativity": "relativeToZap",
-      "path": "../../../zcl-builtin/silabs/zcl-zigbee.json",
+      "path": "../../../../../../../../../app/zcl/zcl-zap.json",
       "type": "zcl-properties",
       "category": "zigbee",
       "version": 1,
-      "description": "ZigbeePro test data"
+      "description": "Zigbee Silabs ZCL data"
     },
     {
       "pathRelativity": "relativeToZap",
-      "path": "../../gen-template/zigbee/gen-templates-zigbee.json",
+      "path": "../../../../../gen-template/gen-templates.json",
       "type": "gen-templates-json",
       "category": "zigbee",
-      "version": "test-v1"
+      "version": "zigbee-v0"
     }
   ],
   "endpointTypes": [
@@ -41,16 +41,14 @@
         "code": 257,
         "profileId": 260,
         "label": "LO-dimmablelight",
-        "name": "LO-dimmablelight",
-        "deviceTypeOrder": 0
+        "name": "LO-dimmablelight"
       },
       "deviceTypes": [
         {
           "code": 257,
           "profileId": 260,
           "label": "LO-dimmablelight",
-          "name": "LO-dimmablelight",
-          "deviceTypeOrder": 0
+          "name": "LO-dimmablelight"
         }
       ],
       "deviceVersions": [
@@ -299,7 +297,7 @@
               "storageOption": "RAM",
               "singleton": 1,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -375,7 +373,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -499,7 +497,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -735,7 +733,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -811,7 +809,7 @@
               "storageOption": "NVM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "1",
+              "defaultValue": "0x00",
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -891,7 +889,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -1095,7 +1093,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -1227,7 +1225,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -1253,7 +1251,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -1425,7 +1423,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -1442,16 +1440,14 @@
         "code": 269,
         "profileId": 260,
         "label": "LO-extendedcolorlight",
-        "name": "LO-extendedcolorlight",
-        "deviceTypeOrder": 0
+        "name": "LO-extendedcolorlight"
       },
       "deviceTypes": [
         {
           "code": 269,
           "profileId": 260,
           "label": "LO-extendedcolorlight",
-          "name": "LO-extendedcolorlight",
-          "deviceTypeOrder": 0
+          "name": "LO-extendedcolorlight"
         }
       ],
       "deviceVersions": [
@@ -1690,7 +1686,7 @@
               "storageOption": "RAM",
               "singleton": 1,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -1766,7 +1762,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -1890,7 +1886,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -2126,7 +2122,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -2202,7 +2198,7 @@
               "storageOption": "NVM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "1",
+              "defaultValue": "0x00",
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -2282,7 +2278,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -2486,7 +2482,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -2618,7 +2614,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -3422,7 +3418,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -3594,7 +3590,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -3611,16 +3607,14 @@
         "code": 97,
         "profileId": 41440,
         "label": "GP-proxy-basic",
-        "name": "GP-proxy-basic",
-        "deviceTypeOrder": 0
+        "name": "GP-proxy-basic"
       },
       "deviceTypes": [
         {
           "code": 97,
           "profileId": 41440,
           "label": "GP-proxy-basic",
-          "name": "GP-proxy-basic",
-          "deviceTypeOrder": 0
+          "name": "GP-proxy-basic"
         }
       ],
       "deviceVersions": [
@@ -3797,7 +3791,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0x0001",
               "reportable": 0,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -3814,24 +3808,21 @@
       "endpointTypeIndex": 0,
       "profileId": 260,
       "endpointId": 1,
-      "networkId": 0,
-      "parentEndpointIdentifier": null
+      "networkId": 0
     },
     {
       "endpointTypeName": "Touchlink",
       "endpointTypeIndex": 1,
       "profileId": 260,
       "endpointId": 2,
-      "networkId": 0,
-      "parentEndpointIdentifier": null
+      "networkId": 0
     },
     {
       "endpointTypeName": "GreenPower",
       "endpointTypeIndex": 2,
       "profileId": 41440,
       "endpointId": 242,
-      "networkId": 0,
-      "parentEndpointIdentifier": null
+      "networkId": 0
     }
   ]
 }
