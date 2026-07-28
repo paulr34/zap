@@ -20411,6 +20411,10 @@ back into a JS integer.
 
 * [JS API: random utilities](#module_JS API_ random utilities)
     * [~checksum(data)](#module_JS API_ random utilities..checksum) ⇒
+    * [~collectPackagePaths(value)](#module_JS API_ random utilities..collectPackagePaths) ⇒
+    * [~pathsMatch(path1, path2)](#module_JS API_ random utilities..pathsMatch) ⇒
+    * [~findPackageByPaths(packages, candidatePaths)](#module_JS API_ random utilities..findPackageByPaths) ⇒
+    * [~ensureSessionPartitionId(db, sessionId, partitionNumber)](#module_JS API_ random utilities..ensureSessionPartitionId) ⇒
     * [~ensurePackagesAndPopulateSessionOptions(db, sessionId, options:, selectedZclPropertyPackage, selectedGenTemplatePackages)](#module_JS API_ random utilities..ensurePackagesAndPopulateSessionOptions) ⇒
     * [~populateSessionPackageOptions(db, sessionId, packages)](#module_JS API_ random utilities..populateSessionPackageOptions) ⇒
     * [~createBackupFile(filePath)](#module_JS API_ random utilities..createBackupFile)
@@ -20446,6 +20450,70 @@ Returns the CRC of the data that is passed.
 | Param | Type |
 | --- | --- |
 | data | <code>\*</code> | 
+
+<a name="module_JS API_ random utilities..collectPackagePaths"></a>
+
+### JS API: random utilities~collectPackagePaths(value) ⇒
+Collects file paths out of a value that can be a single path, an array of
+paths, a package object containing a `path` key, or an array of such
+objects. Anything that does not carry a path, such as a package id, is
+ignored. This is needed because metafile arguments reach us in all those
+shapes: the command line arguments are arrays, the REST API sends package
+objects and the internal callers pass single strings.
+
+**Kind**: inner method of [<code>JS API: random utilities</code>](#module_JS API_ random utilities)  
+**Returns**: array of paths, empty if none were found.  
+
+| Param | Type |
+| --- | --- |
+| value | <code>\*</code> | 
+
+<a name="module_JS API_ random utilities..pathsMatch"></a>
+
+### JS API: random utilities~pathsMatch(path1, path2) ⇒
+Compares two file system paths. Both paths are resolved first, so that
+relative paths and mixed path separators don't matter, and the comparison
+is case insensitive on platforms with case insensitive file systems.
+
+**Kind**: inner method of [<code>JS API: random utilities</code>](#module_JS API_ random utilities)  
+**Returns**: true if both paths point to the same location.  
+
+| Param | Type |
+| --- | --- |
+| path1 | <code>\*</code> | 
+| path2 | <code>\*</code> | 
+
+<a name="module_JS API_ random utilities..findPackageByPaths"></a>
+
+### JS API: random utilities~findPackageByPaths(packages, candidatePaths) ⇒
+Finds the first package out of `packages` whose path matches any of the
+given `candidatePaths`. Candidates are honored in the order they were
+given, so the first candidate that resolves to a loaded package wins.
+
+**Kind**: inner method of [<code>JS API: random utilities</code>](#module_JS API_ random utilities)  
+**Returns**: matching package or null if there is no match.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| packages | <code>\*</code> | array of packages, each containing a `path` |
+| candidatePaths | <code>\*</code> | array of paths |
+
+<a name="module_JS API_ random utilities..ensureSessionPartitionId"></a>
+
+### JS API: random utilities~ensureSessionPartitionId(db, sessionId, partitionNumber) ⇒
+Returns the session partition id for a given one based partition number,
+creating the partition when the session does not have it yet. Sessions are
+created with a partition count that is guessed up front, so the partition
+a package has to go into may not exist.
+
+**Kind**: inner method of [<code>JS API: random utilities</code>](#module_JS API_ random utilities)  
+**Returns**: session partition id.  
+
+| Param | Type |
+| --- | --- |
+| db | <code>\*</code> | 
+| sessionId | <code>\*</code> | 
+| partitionNumber | <code>\*</code> | 
 
 <a name="module_JS API_ random utilities..ensurePackagesAndPopulateSessionOptions"></a>
 
