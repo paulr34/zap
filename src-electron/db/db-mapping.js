@@ -764,6 +764,9 @@ exports.map = {
       apiMaturity: x.API_MATURITY,
       isChangeOmitted: dbApi.fromDbBool(x.IS_CHANGE_OMITTED),
       persistence: x.PERSISTENCE,
+      isQuieterReporting: dbApi.fromDbBool(x.IS_QUIETER_REPORTING),
+      isSourceAttribution: dbApi.fromDbBool(x.IS_SOURCE_ATTRIBUTION),
+      isAtomic: dbApi.fromDbBool(x.IS_ATOMIC),
       reportMinInterval: x.REPORT_MIN_INTERVAL,
       reportMaxInterval: x.REPORT_MAX_INTERVAL,
       conformance: x.CONFORMANCE

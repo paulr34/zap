@@ -209,6 +209,21 @@ const persistence = {
 
 exports.persistence = persistence
 
+// Attribute qualities from the data model spec (section 7.7), keyed by the
+// name templates use when asking for a quality.
+const attributeQuality = {
+  atomic: 'atomic', // T
+  changeOmitted: 'changeOmitted', // C
+  fixed: 'fixed', // F
+  nonVolatile: 'nonVolatile', // N
+  nullable: 'nullable', // X
+  quieterReporting: 'quieterReporting', // Q
+  scene: 'scene', // S
+  sourceAttribution: 'sourceAttribution' // A
+}
+
+exports.attributeQuality = attributeQuality
+
 // When SDK supports a custom device, these are the default values for it.
 exports.customDevice = {
   domain: 'Custom',

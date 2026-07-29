@@ -75,6 +75,22 @@ test('Validate loading', async () => {
   expect(attr.isSourceAttribution).toBe(false)
   expect(attr.isAtomic).toBe(false)
 
+  // Same lookup, but for a cluster specific attribute which does carry the
+  // qualities in its XML. See EnhancedColorMode in color-control-cluster.xml.
+  let enhancedColorMode = await queryAttribute.selectAttributeByCode(
+    db,
+    zclPackageId,
+    0x0300,
+    0x4001,
+    null
+  )
+  expect(enhancedColorMode).not.toBe(null)
+  expect(enhancedColorMode.isChangeOmitted).toBe(true)
+  expect(enhancedColorMode.persistence).toBe(dbEnum.persistence.nonVolatile)
+  expect(enhancedColorMode.isQuieterReporting).toBe(true)
+  expect(enhancedColorMode.isSourceAttribution).toBe(true)
+  expect(enhancedColorMode.isAtomic).toBe(true)
+
   let cluster = await queryZcl.selectClusterByCode(
     db,
     zclPackageId,

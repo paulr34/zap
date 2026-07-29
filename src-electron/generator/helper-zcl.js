@@ -1952,7 +1952,7 @@ async function if_is_atomic(type, options) {
  * otherwise. Meant to be used inside an attribute iteration context (e.g.
  * `{{#zcl_attributes}}`) where `this` is an attribute object.
  *
- * Supported quality names:
+ * Supported quality names come from dbEnum.attributeQuality:
  * - 'fixed'             : attribute value is fixed (persistence === 'fixed')
  * - 'nonVolatile'       : attribute is stored in non-volatile memory
  * - 'changeOmitted'     : attribute omits change reporting (C)
@@ -1979,29 +1979,28 @@ function if_attribute_quality(quality, options) {
   let hasQuality = false
   if (this != null) {
     switch (quality) {
-      case 'fixed':
+      case dbEnum.attributeQuality.fixed:
         hasQuality = this.persistence === dbEnum.persistence.fixed
         break
-      case 'nonVolatile':
+      case dbEnum.attributeQuality.nonVolatile:
         hasQuality = this.persistence === dbEnum.persistence.nonVolatile
         break
-      case 'changeOmitted':
+      case dbEnum.attributeQuality.changeOmitted:
         hasQuality = !!this.isChangeOmitted
         break
-      case 'quieterReporting':
+      case dbEnum.attributeQuality.quieterReporting:
         hasQuality = !!this.isQuieterReporting
         break
-      case 'sourceAttribution':
+      case dbEnum.attributeQuality.sourceAttribution:
         hasQuality = !!this.isSourceAttribution
         break
-      case 'atomic':
-      case 'atomicWrite':
+      case dbEnum.attributeQuality.atomic:
         hasQuality = !!this.isAtomic
         break
-      case 'nullable':
+      case dbEnum.attributeQuality.nullable:
         hasQuality = !!this.isNullable
         break
-      case 'scene':
+      case dbEnum.attributeQuality.scene:
         hasQuality = !!this.isSceneRequired
         break
       default:
