@@ -12459,6 +12459,7 @@ From `exports.map.endpointTypeAttributeExtended` in `src-electron/db/db-mapping.
 - included
 - includedReportable
 - isArray
+- isAtomic
 - isBound
 - isChangeOmitted
 - isClusterEnabled
@@ -12468,11 +12469,13 @@ From `exports.map.endpointTypeAttributeExtended` in `src-electron/db/db-mapping.
 - isManufacturingSpecific
 - isNullable
 - isOptionalAttribute
+- isQuieterReporting
 - isReadable
 - isReadableAttribute
 - isReportableAttribute
 - isSceneRequired
 - isSingleton
+- isSourceAttribution
 - isWritable
 - isWritableAttribute
 - manufacturerCode
@@ -14037,7 +14040,7 @@ given quality (Matter spec section 7.7), and the inverse (`{{else}}`) block
 otherwise. Meant to be used inside an attribute iteration context (e.g.
 `{{#zcl_attributes}}`) where `this` is an attribute object.
 
-Supported quality names:
+Supported quality names come from dbEnum.attributeQuality:
 - 'fixed'             : attribute value is fixed (persistence === 'fixed')
 - 'nonVolatile'       : attribute is stored in non-volatile memory
 - 'changeOmitted'     : attribute omits change reporting (C)

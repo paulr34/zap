@@ -300,6 +300,7 @@ async function token_attribute_util(context, options) {
  * - included
  * - includedReportable
  * - isArray
+ * - isAtomic
  * - isBound
  * - isChangeOmitted
  * - isClusterEnabled
@@ -309,11 +310,13 @@ async function token_attribute_util(context, options) {
  * - isManufacturingSpecific
  * - isNullable
  * - isOptionalAttribute
+ * - isQuieterReporting
  * - isReadable
  * - isReadableAttribute
  * - isReportableAttribute
  * - isSceneRequired
  * - isSingleton
+ * - isSourceAttribution
  * - isWritable
  * - isWritableAttribute
  * - manufacturerCode
