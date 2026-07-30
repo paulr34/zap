@@ -42,11 +42,22 @@ async function getForcedExternalStorage(db, packageIds) {
       ? packageIds
       : [packageIds]
 
-    let forcedExternal = await queryPackage.getAttributeAccessInterface(
-      db,
+    // Both policies keep the attribute out of the attribute store. They differ
+    // in whether a default value is still generated, which the caller can tell
+    // apart by the policy in optionCode.
+    let policies = [
       dbEnum.storagePolicy.attributeAccessInterface,
-      packageIdsArray
-    )
+      dbEnum.storagePolicy.defaultOnly
+    ]
+    let forcedExternal = []
+    for (let policy of policies) {
+      let ofPolicy = await queryPackage.getAttributeAccessInterface(
+        db,
+        policy,
+        packageIdsArray
+      )
+      forcedExternal = forcedExternal.concat(ofPolicy)
+    }
     return forcedExternal
   } catch (error) {
     console.error('Error fetching forced external storage:', error)
@@ -88,8 +99,9 @@ async function computeStoragePolicyForGlobalAttributes(
               option.optionCategory == clusterName &&
               option.optionLabel == attribute.name
             ) {
-              attribute.storagePolicy =
-                dbEnum.storagePolicy.attributeAccessInterface
+              attribute.storagePolicy = dbEnum.storagePolicy.resolve(
+                option.optionCode
+              )
               return true
             }
           })
@@ -120,7 +132,10 @@ async function computeStoragePolicyForGlobalAttributes(
 async function computeStorageOptionNewConfig(storagePolicy) {
   try {
     let storageOption
-    if (storagePolicy == dbEnum.storagePolicy.attributeAccessInterface) {
+    if (
+      storagePolicy == dbEnum.storagePolicy.attributeAccessInterface ||
+      storagePolicy == dbEnum.storagePolicy.defaultOnly
+    ) {
       storageOption = dbEnum.storageOption.external
     } else if (storagePolicy == dbEnum.storagePolicy.any) {
       storageOption = dbEnum.storageOption.ram
@@ -161,7 +176,9 @@ async function computeStoragePolicyNewConfig(
         option.optionCategory == clusterName &&
         option.optionLabel == attributeName
       ) {
-        storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
+        // The policy is what the option carries, so that an attribute that
+        // only needs its default value does not lose it.
+        storagePolicy = dbEnum.storagePolicy.resolve(option.optionCode)
         return true
       }
     })
@@ -201,7 +218,7 @@ async function computeStorageImport(
         option.optionCategory == clusterName &&
         option.optionLabel == attributeName
       ) {
-        updatedStoragePolicy = dbEnum.storagePolicy.attributeAccessInterface
+        updatedStoragePolicy = dbEnum.storagePolicy.resolve(option.optionCode)
         return true
       }
       return false

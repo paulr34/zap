@@ -390,6 +390,17 @@ endpoint types, included attributes, and per-cluster conformance).</p>
 <dd><p>This module provides the APIs for validating inputs to the database, and returning flags indicating if
 things were successful or not.</p>
 </dd>
+<dt><a href="#module_Loader API_ Cluster implementation metadata">Loader API: Cluster implementation metadata</a></dt>
+<dd><p>Cluster implementation metadata.</p>
+<p>Enabling a cluster in ZAP is not the whole story for a cluster that is
+implemented in code. Such a cluster holds its own attribute state, so the
+attribute store that ZAP generates has nothing to do for it, and some of the
+choices that ZAP offers for those attributes have no meaning.</p>
+<p>An SDK describes that with a <code>clusterImplementation</code> section, which this
+module reads, validates against the loaded ZCL, and turns into two things:
+an implementation on the cluster, and a storage policy on its attributes.</p>
+<p>See docs/code-driven-clusters.md.</p>
+</dd>
 <dt><a href="#module_Loader API_ Loader APIs">Loader API: Loader APIs</a></dt>
 <dd><p>This module provides the APIs for dotdot Loading</p>
 </dd>
@@ -22700,6 +22711,97 @@ Check if float value is within the min/max bounds.
 | defaultValue | <code>\*</code> | 
 | min | <code>\*</code> | 
 | max | <code>\*</code> | 
+
+<a name="module_Loader API_ Cluster implementation metadata"></a>
+
+## Loader API: Cluster implementation metadata
+Cluster implementation metadata.
+
+Enabling a cluster in ZAP is not the whole story for a cluster that is
+implemented in code. Such a cluster holds its own attribute state, so the
+attribute store that ZAP generates has nothing to do for it, and some of the
+choices that ZAP offers for those attributes have no meaning.
+
+An SDK describes that with a `clusterImplementation` section, which this
+module reads, validates against the loaded ZCL, and turns into two things:
+an implementation on the cluster, and a storage policy on its attributes.
+
+See docs/code-driven-clusters.md.
+
+
+* [Loader API: Cluster implementation metadata](#module_Loader API_ Cluster implementation metadata)
+    * [~resolveClusterImplementation(metadataFile, value)](#module_Loader API_ Cluster implementation metadata..resolveClusterImplementation) ⇒
+    * [~attributeHandlingOf(clusterEntry, attributeName)](#module_Loader API_ Cluster implementation metadata..attributeHandlingOf) ⇒
+    * [~validateClusterImplementation(db, packageId, clusterImplementation)](#module_Loader API_ Cluster implementation metadata..validateClusterImplementation) ⇒
+    * [~loadClusterImplementation(db, packageId, clusterImplementation)](#module_Loader API_ Cluster implementation metadata..loadClusterImplementation) ⇒
+
+<a name="module_Loader API_ Cluster implementation metadata..resolveClusterImplementation"></a>
+
+### Loader API: Cluster implementation metadata~resolveClusterImplementation(metadataFile, value) ⇒
+Reads the `clusterImplementation` value of a ZCL metadata file.
+
+The value is either the metadata itself, or the name of a JSON file that
+holds it, relative to the metadata file. A separate file is the better
+option for an SDK that generates this data from the source of truth in its
+own tree.
+
+**Kind**: inner method of [<code>Loader API: Cluster implementation metadata</code>](#module_Loader API_ Cluster implementation metadata)  
+**Returns**: the metadata, or null when there is none  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| metadataFile | <code>\*</code> | path of the zcl.json file |
+| value | <code>\*</code> | value of the clusterImplementation key |
+
+<a name="module_Loader API_ Cluster implementation metadata..attributeHandlingOf"></a>
+
+### Loader API: Cluster implementation metadata~attributeHandlingOf(clusterEntry, attributeName) ⇒
+Resolves the handling of one attribute of a cluster. An entry for the
+attribute wins over the '*' entry, which is the fallback for the whole
+cluster. Clusters without any entry fall back to what the implementation
+implies: a code driven cluster owns everything unless it says otherwise.
+
+**Kind**: inner method of [<code>Loader API: Cluster implementation metadata</code>](#module_Loader API_ Cluster implementation metadata)  
+**Returns**: one of dbEnum.attributeHandling  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| clusterEntry | <code>\*</code> | entry of one cluster |
+| attributeName | <code>\*</code> | name of the attribute |
+
+<a name="module_Loader API_ Cluster implementation metadata..validateClusterImplementation"></a>
+
+### Loader API: Cluster implementation metadata~validateClusterImplementation(db, packageId, clusterImplementation) ⇒
+Checks the metadata against the ZCL that was loaded, so that a typo in a
+cluster or attribute name is reported instead of silently doing nothing.
+
+**Kind**: inner method of [<code>Loader API: Cluster implementation metadata</code>](#module_Loader API_ Cluster implementation metadata)  
+**Returns**: array with the cluster, its entry and its attributes, per named cluster  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| db | <code>\*</code> |  |
+| packageId | <code>\*</code> |  |
+| clusterImplementation | <code>\*</code> | the metadata |
+
+<a name="module_Loader API_ Cluster implementation metadata..loadClusterImplementation"></a>
+
+### Loader API: Cluster implementation metadata~loadClusterImplementation(db, packageId, clusterImplementation) ⇒
+Loads cluster implementation metadata into the database.
+
+The implementation is recorded on the cluster, and the handling of every
+attribute is recorded as a storage policy. Global attributes have no cluster
+of their own in the database, so their policy is recorded per cluster in the
+package options, the same way the attribute access interface does it.
+
+**Kind**: inner method of [<code>Loader API: Cluster implementation metadata</code>](#module_Loader API_ Cluster implementation metadata)  
+**Returns**: promise that resolves when the metadata is loaded  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| db | <code>\*</code> |  |
+| packageId | <code>\*</code> |  |
+| clusterImplementation | <code>\*</code> | the metadata |
 
 <a name="module_Loader API_ Loader APIs"></a>
 

@@ -765,6 +765,10 @@ WHERE
   if (storagePolicy == dbEnum.storagePolicy.attributeAccessInterface) {
     attribute.storageOption = dbEnum.storageOption.external
     attribute.defaultValue = null
+  } else if (storagePolicy == dbEnum.storagePolicy.defaultOnly) {
+    // The implementation of the cluster holds the value, but it reads the
+    // default from what ZAP generates, so the default is kept.
+    attribute.storageOption = dbEnum.storageOption.external
   }
 
   let arg = [

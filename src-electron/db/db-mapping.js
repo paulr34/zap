@@ -83,7 +83,8 @@ exports.map = {
       isSingleton: dbApi.fromDbBool(x.IS_SINGLETON),
       revision: x.REVISION,
       isManufacturingSpecific: dbApi.toDbBool(x.CLUSTER_MANUFACTURER_CODE),
-      apiMaturity: x.API_MATURITY
+      apiMaturity: x.API_MATURITY,
+      implementation: x.IMPLEMENTATION
     }
   },
 
