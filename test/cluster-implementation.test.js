@@ -22,6 +22,7 @@ const path = require('path')
 const dbApi = require('../src-electron/db/db-api')
 const dbEnum = require('../src-shared/db-enum')
 const env = require('../src-electron/util/env')
+const helperZcl = require('../src-electron/generator/helper-zcl')
 const matter = require('../src-electron/sdk/matter')
 const queryCluster = require('../src-electron/db/query-cluster')
 const queryZcl = require('../src-electron/db/query-zcl')
@@ -157,6 +158,36 @@ test(
         'at1'
       )
     ).toEqual(dbEnum.storagePolicy.attributeAccessInterface)
+  },
+  testUtil.timeout.medium()
+)
+
+test(
+  'Templates can tell a code driven cluster from an ember one',
+  async () => {
+    let clusters = await queryZcl.selectAllClusters(db, packageId)
+    let test1 = clusters.find((c) => c.name == 'Test 1')
+    let test2 = clusters.find((c) => c.name == 'Test 2')
+
+    // The helper reads the implementation off the context when there is one,
+    // and falls back to a query when the context is not a cluster.
+    let context = { global: { db: db } }
+    let options = {
+      fn: () => 'code driven',
+      inverse: () => 'ember'
+    }
+    expect(
+      await helperZcl.if_cluster_code_driven.call(context, test1.id, options)
+    ).toEqual('code driven')
+    expect(
+      await helperZcl.if_cluster_code_driven.call(context, test2.id, options)
+    ).toEqual('ember')
+    expect(
+      await helperZcl.if_cluster_code_driven.call(
+        Object.assign({}, test1, context),
+        options
+      )
+    ).toEqual('code driven')
   },
   testUtil.timeout.medium()
 )

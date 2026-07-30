@@ -60,6 +60,12 @@ limitations under the License.
                     for
                     <strong> {{ enabledMessage }} </strong>
                   </div>
+                  <div v-if="isCodeDriven" class="q-pt-sm text-primary">
+                    <q-icon name="code" class="q-mr-xs" />
+                    Implemented in code. The cluster keeps its own attribute
+                    state, so the application has to create it, and the storage
+                    of those attributes is not configurable here.
+                  </div>
                 </div>
                 <div class="col-auto">
                   <q-input
@@ -178,6 +184,12 @@ export default {
   name: 'ZclClusterView',
   mixins: [CommonMixin, EditableAttributesMixin, uiOptions, featureMixin],
   computed: {
+    isCodeDriven() {
+      return (
+        this.selectedCluster.implementation ==
+        dbEnum.clusterImplementation.codeDriven
+      )
+    },
     isClusterDocumentationAvailable() {
       return (
         this.$store.state.zap.genericOptions[

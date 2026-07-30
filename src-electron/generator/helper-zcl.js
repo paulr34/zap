@@ -2699,6 +2699,39 @@ async function if_mfg_specific_cluster(clusterId, options) {
 }
 
 /**
+ * Runs its body when the cluster in the context, or the cluster given as an
+ * argument, is implemented in code rather than through the attribute store.
+ * The SDK says which clusters those are, see docs/code-driven-clusters.md.
+ *
+ * example:
+ * {{#if_cluster_code_driven}}
+ *  the implementation of the cluster owns its state
+ * {{else}}
+ *  the attribute store owns the state
+ * {{/if_cluster_code_driven}}
+ *
+ * @param clusterId optional cluster id, when the context is not a cluster
+ * @param options
+ * @returns Content of the block that applies.
+ */
+async function if_cluster_code_driven(clusterId, options) {
+  // The cluster id is optional, so handlebars may pass the options in its
+  // place.
+  if (options === undefined) {
+    options = clusterId
+    clusterId = this.id != null ? this.id : this.clusterId
+  }
+  let implementation = this.implementation
+  if (implementation === undefined && clusterId != null) {
+    let cluster = await queryZcl.selectClusterById(this.global.db, clusterId)
+    implementation = cluster ? cluster.implementation : null
+  }
+  return implementation == dbEnum.clusterImplementation.codeDriven
+    ? options.fn(this)
+    : options.inverse(this)
+}
+
+/**
  * Given the value and size of an attribute along with endian as an option.
  * This helper returns the attribute value as big/little endian.
  * Example: {{as_generated_default_macro 0x00003840 4 endian="big"}}
@@ -3462,6 +3495,7 @@ exports.as_underlying_zcl_type_ca_always_present_with_presentif = dep(
 )
 exports.if_is_struct = if_is_struct
 exports.if_mfg_specific_cluster = if_mfg_specific_cluster
+exports.if_cluster_code_driven = if_cluster_code_driven
 exports.first_unused_enum_value = first_unused_enum_value
 exports.zcl_commands_with_cluster_info = zcl_commands_with_cluster_info
 exports.zcl_commands_with_arguments = zcl_commands_with_arguments

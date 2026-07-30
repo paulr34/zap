@@ -13047,6 +13047,7 @@ This module contains the API for templating. For more detailed instructions, rea
     * [~if_command_argument_always_present_with_presentif(commandId, introducedInRef, removedInRef, presentIf, argumentNotInAllVersionsPresentIfReturn, argumentInAllVersionsReturn)](#module_Templating API_ static zcl helpers..if_command_argument_always_present_with_presentif) ⇒
     * [~if_manufacturing_specific_cluster(clusterId, manufacturer_specific_return, null_manufacturer_specific_return)](#module_Templating API_ static zcl helpers..if_manufacturing_specific_cluster) ⇒
     * [~if_mfg_specific_cluster(clusterId, options)](#module_Templating API_ static zcl helpers..if_mfg_specific_cluster) ⇒
+    * [~if_cluster_code_driven(clusterId, options)](#module_Templating API_ static zcl helpers..if_cluster_code_driven) ⇒
     * [~as_generated_default_macro(value, attributeSize, options)](#module_Templating API_ static zcl helpers..as_generated_default_macro) ⇒
     * [~attribute_mask(writable, storageOption, minMax, mfgSpecific, clusterCode, client, isSingleton, prefixString, postfixString)](#module_Templating API_ static zcl helpers..attribute_mask) ⇒
     * [~command_mask(commmandSource, clusterSide, isIncomingEnabled, isOutgoingEnabled, manufacturingCode, prefixForMask)](#module_Templating API_ static zcl helpers..command_mask) ⇒
@@ -14397,6 +14398,28 @@ command is manufacturing specific or not.
 | --- |
 | clusterId | 
 | options | 
+
+<a name="module_Templating API_ static zcl helpers..if_cluster_code_driven"></a>
+
+### Templating API: static zcl helpers~if\_cluster\_code\_driven(clusterId, options) ⇒
+Runs its body when the cluster in the context, or the cluster given as an
+argument, is implemented in code rather than through the attribute store.
+The SDK says which clusters those are, see docs/code-driven-clusters.md.
+
+example:
+{{#if_cluster_code_driven}}
+ the implementation of the cluster owns its state
+{{else}}
+ the attribute store owns the state
+{{/if_cluster_code_driven}}
+
+**Kind**: inner method of [<code>Templating API: static zcl helpers</code>](#module_Templating API_ static zcl helpers)  
+**Returns**: Content of the block that applies.  
+
+| Param | Description |
+| --- | --- |
+| clusterId | optional cluster id, when the context is not a cluster |
+| options |  |
 
 <a name="module_Templating API_ static zcl helpers..as_generated_default_macro"></a>
 
