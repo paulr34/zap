@@ -25,11 +25,30 @@ const queryAttribute = require('../src-electron/db/query-attribute')
 const querySession = require('../src-electron/db/query-session')
 const queryPackage = require('../src-electron/db/query-package')
 const queryZcl = require('../src-electron/db/query-zcl')
+const sessionNotification = require('../src-electron/db/query-session-notification')
 const zclLoader = require('../src-electron/zcl/zcl-loader')
 const importJs = require('../src-electron/importexport/import')
+const util = require('../src-electron/util/util')
 const testUtil = require('./test-util')
 const testQuery = require('./test-query')
 const dbEnum = require('../src-shared/db-enum')
+
+/**
+ * Returns the category of the session package of a given type.
+ *
+ * @param {*} sessionId
+ * @param {*} packageType
+ * @returns array of categories.
+ */
+async function sessionPackageCategories(sessionId, packageType) {
+  let pkgs = await queryPackage.getSessionPackagesWithTypes(db, sessionId)
+  let categories = []
+  for (let pkg of pkgs.filter((p) => p.type === packageType)) {
+    let p = await queryPackage.getPackageByPackageId(db, pkg.packageRef)
+    categories.push(p.category)
+  }
+  return categories
+}
 
 let db
 
@@ -88,6 +107,65 @@ test('Validate Matter zap file.', async () => {
       fail('Unknown package type.')
     }
   }
+})
+
+test('Session uses the requested zcl and template metafiles', async () => {
+  let sessionId = await querySession.createBlankSession(db)
+  await util.ensurePackagesAndPopulateSessionOptions(db, sessionId, {
+    zcl: env.builtinSilabsZclMetafile(),
+    template: testUtil.testTemplate.zigbee
+  })
+  expect(
+    await sessionPackageCategories(sessionId, dbEnum.packageType.zclProperties)
+  ).toEqual(['zigbee'])
+  expect(
+    await sessionPackageCategories(
+      sessionId,
+      dbEnum.packageType.genTemplatesJson
+    )
+  ).toEqual(['zigbee'])
+})
+
+test('Session uses the requested metafiles when they are passed as command line arrays', async () => {
+  // Command line arguments arrive as arrays and the paths in them can be
+  // relative, neither of which must prevent the match.
+  let sessionId = await querySession.createBlankSession(db)
+  await util.ensurePackagesAndPopulateSessionOptions(db, sessionId, {
+    zcl: [path.relative(process.cwd(), env.builtinMatterZclMetafile())],
+    template: [testUtil.testTemplate.matter]
+  })
+  expect(
+    await sessionPackageCategories(sessionId, dbEnum.packageType.zclProperties)
+  ).toEqual(['matter'])
+  expect(
+    await sessionPackageCategories(
+      sessionId,
+      dbEnum.packageType.genTemplatesJson
+    )
+  ).toEqual(['matter'])
+})
+
+test('Session falls back to a loaded zcl metafile and reports it', async () => {
+  // This metafile exists, but it was never loaded into this database, which is
+  // what happens when a project is opened against an SDK that zap does not
+  // know about.
+  let unknownMetafile = env.builtinNewMatterZclMetafile()
+  let sessionId = await querySession.createBlankSession(db)
+  await util.ensurePackagesAndPopulateSessionOptions(db, sessionId, {
+    zcl: unknownMetafile,
+    template: testUtil.testTemplate.matter
+  })
+  // The session still has to end up with a data model, otherwise it shows no
+  // clusters at all.
+  expect(
+    await sessionPackageCategories(sessionId, dbEnum.packageType.zclProperties)
+  ).toHaveLength(1)
+  let notifications = await sessionNotification.getNotification(db, sessionId)
+  // The warning has to name the metafile that could not be matched, so that
+  // the mismatch can be tracked down from the notifications page.
+  let messages = notifications.map((n) => n.message)
+  expect(messages.some((m) => m.includes(unknownMetafile))).toBeTruthy()
+  expect(messages.some((m) => m.includes('undefined'))).toBeFalsy()
 })
 
 test('Validate Zigbee zap file.', async () => {
