@@ -2699,9 +2699,13 @@ async function if_mfg_specific_cluster(clusterId, options) {
 }
 
 /**
- * Runs its body when the cluster in the context, or the cluster given as an
- * argument, is implemented in code rather than through the attribute store.
- * The SDK says which clusters those are, see docs/code-driven-clusters.md.
+ * Runs its body when a cluster is implemented in code rather than through the
+ * attribute store. The SDK says which clusters those are, see
+ * docs/code-driven-clusters.md.
+ *
+ * Used inside a cluster, it reads the implementation of that cluster. Anywhere
+ * else it needs the cluster id, because a context such as an attribute carries
+ * an id of its own and guessing would give the wrong answer.
  *
  * example:
  * {{#if_cluster_code_driven}}
@@ -2710,22 +2714,32 @@ async function if_mfg_specific_cluster(clusterId, options) {
  *  the attribute store owns the state
  * {{/if_cluster_code_driven}}
  *
- * @param clusterId optional cluster id, when the context is not a cluster
+ * @param clusterId cluster id, when the context is not a cluster
  * @param options
  * @returns Content of the block that applies.
  */
 async function if_cluster_code_driven(clusterId, options) {
-  // The cluster id is optional, so handlebars may pass the options in its
-  // place.
-  if (options === undefined) {
+  // The cluster id is optional, so handlebars passes the options in its place
+  // when it is left out.
+  let hasClusterId = options !== undefined
+  if (!hasClusterId) {
     options = clusterId
-    clusterId = this.id != null ? this.id : this.clusterId
   }
-  let implementation = this.implementation
-  if (implementation === undefined && clusterId != null) {
+
+  let implementation
+  if (hasClusterId) {
     let cluster = await queryZcl.selectClusterById(this.global.db, clusterId)
     implementation = cluster ? cluster.implementation : null
+  } else if ('implementation' in this) {
+    implementation = this.implementation
+  } else {
+    // Guessing a cluster from the context would silently give the wrong answer
+    // for contexts that carry an id of their own, such as an attribute.
+    throw new Error(
+      'Helper {{#if_cluster_code_driven}} needs a cluster in the context, or a cluster id as its argument.'
+    )
   }
+
   return implementation == dbEnum.clusterImplementation.codeDriven
     ? options.fn(this)
     : options.inverse(this)

@@ -5235,9 +5235,13 @@ command is manufacturing specific or not.
 <a name="module_Templating API_ static zcl helpers..if_cluster_code_driven"></a>
 
 ### Templating API: static zcl helpers~if\_cluster\_code\_driven(clusterId, options) ⇒
-Runs its body when the cluster in the context, or the cluster given as an
-argument, is implemented in code rather than through the attribute store.
-The SDK says which clusters those are, see docs/code-driven-clusters.md.
+Runs its body when a cluster is implemented in code rather than through the
+attribute store. The SDK says which clusters those are, see
+docs/code-driven-clusters.md.
+
+Used inside a cluster, it reads the implementation of that cluster. Anywhere
+else it needs the cluster id, because a context such as an attribute carries
+an id of its own and guessing would give the wrong answer.
 
 example:
 {{#if_cluster_code_driven}}
@@ -5251,7 +5255,7 @@ example:
 
 | Param | Description |
 | --- | --- |
-| clusterId | optional cluster id, when the context is not a cluster |
+| clusterId | cluster id, when the context is not a cluster |
 | options |  |
 
 <a name="module_Templating API_ static zcl helpers..as_generated_default_macro"></a>

@@ -188,6 +188,24 @@ test(
         options
       )
     ).toEqual('code driven')
+
+    // An explicit cluster id wins over whatever the context happens to hold.
+    expect(
+      await helperZcl.if_cluster_code_driven.call(
+        Object.assign({}, test1, context),
+        test2.id,
+        options
+      )
+    ).toEqual('ember')
+
+    // Without either, the helper says so instead of guessing a cluster from a
+    // context that carries an id of its own.
+    await expect(
+      helperZcl.if_cluster_code_driven.call(
+        Object.assign({ id: 12345, clusterId: '0x00000006' }, context),
+        options
+      )
+    ).rejects.toThrow('needs a cluster in the context')
   },
   testUtil.timeout.medium()
 )
