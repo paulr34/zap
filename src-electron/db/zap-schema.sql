@@ -156,6 +156,9 @@ CREATE TABLE IF NOT EXISTS "CLUSTER" (
   "INTRODUCED_IN_REF" integer,
   "REMOVED_IN_REF" integer,
   "API_MATURITY" text,
+  -- Who implements the cluster, see dbEnum.clusterImplementation. Null means
+  -- the SDK did not say, which is treated as an ember cluster.
+  "IMPLEMENTATION" text,
   "MANUFACTURER_CODE_DERIVED" AS (COALESCE(MANUFACTURER_CODE, 0)),
   foreign key (INTRODUCED_IN_REF) references SPEC(SPEC_ID) ON DELETE CASCADE ON UPDATE CASCADE,
   foreign key (REMOVED_IN_REF) references SPEC(SPEC_ID) ON DELETE CASCADE ON UPDATE CASCADE,

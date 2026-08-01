@@ -66,10 +66,6 @@ async function validateAttribute(
     return { defaultValue: ['Attribute not found in endpoint configuration'] }
   }
 
-  if (endpointAttribute.storageOption === dbEnum.storageOption.external) {
-    return { defaultValue: [] }
-  }
-
   let attribute = await queryZcl.selectAttributeById(db, attributeRef)
   // Null check for attribute
   if (!attribute) {
@@ -78,6 +74,16 @@ async function validateAttribute(
       - attributeRef: ${attributeRef}`
     )
     return { defaultValue: ['Attribute definition not found'] }
+  }
+
+  // An attribute that ZAP does not store has no default value to check, unless
+  // that default is the one thing the implementation of the cluster takes from
+  // ZAP.
+  if (
+    endpointAttribute.storageOption === dbEnum.storageOption.external &&
+    attribute.storagePolicy !== dbEnum.storagePolicy.defaultOnly
+  ) {
+    return { defaultValue: [] }
   }
   return validateSpecificAttribute(
     endpointAttribute,

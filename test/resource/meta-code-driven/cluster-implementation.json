@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "clusters": {
+    "Test 1": {
+      "implementation": "code-driven",
+      "attributes": {
+        "*": "internal",
+        "at2": "default-only"
+      }
+    },
+    "Test 2": {
+      "implementation": "ember"
+    }
+  }
+}

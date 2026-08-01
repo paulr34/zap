@@ -131,6 +131,18 @@ limitations under the License.
             "
           >
             {{ props.row.label }}
+            <q-chip
+              v-if="isClusterCodeDriven(props.row)"
+              dense
+              outline
+              color="primary"
+              class="q-ml-sm"
+              label="Code driven"
+            >
+              <q-tooltip>
+                {{ codeDrivenClusterMessage }}
+              </q-tooltip>
+            </q-chip>
           </q-td>
           <q-td
             key="requiredCluster"
@@ -231,6 +243,7 @@ limitations under the License.
 </template>
 <script>
 import CommonMixin from '../util/common-mixin'
+import * as DbEnum from '../../src-shared/db-enum'
 import restApi from '../../src-shared/rest-api'
 import uiOptions from '../util/ui-options'
 import EditableAttributesMixin from '../util/editable-attributes-mixin.js'
@@ -474,6 +487,11 @@ export default {
         this.isClusterEnabled(cluster.id) &&
         cluster.apiMaturity == 'provisional'
       )
+    },
+    /* A code driven cluster is implemented in the SDK rather than through the
+       attribute store, which changes what enabling it here means. */
+    isClusterCodeDriven(cluster) {
+      return cluster.implementation == DbEnum.clusterImplementation.codeDriven
     },
     doesClusterHaveAnyWarnings(clusterData) {
       // disable warning if no UC components are loaded and ZAP is not in standalone mode
@@ -720,6 +738,10 @@ export default {
       showEnableAllClustersDialog: false,
       uc_label: 'uc label',
       provisionalWarningMessage: 'Support for the cluster is provisional',
+      codeDrivenClusterMessage:
+        'This cluster is implemented in code and keeps its own state. ' +
+        'Enabling it here configures the endpoint, but the cluster only ' +
+        'works once the application creates it.',
       clusterSelectionOptions: [
         { label: 'Not Enabled', client: false, server: false },
         { label: 'Client', client: true, server: false },

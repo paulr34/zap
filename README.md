@@ -40,6 +40,7 @@ This software is licensed under [Apache 2.0 license](LICENSE.txt).
 - [Validating `.zap` files](docs/validating-zap-files.md)
 - [ZAP Template Helpers](docs/helpers.md)
 - [ZAP External Template Helpers](docs/external-helpers.md)
+- [Code driven clusters](docs/code-driven-clusters.md)
 - [ZAP file Extensions](docs/zap-file-extensions.md)
 - [Upgrading ZAP files with GSDK upgrades](docs/zap-file-upgrade.md)
 - [FAQ/Developer dependencies](docs/faq.md)

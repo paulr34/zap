@@ -186,10 +186,15 @@ const storagePolicy = {
   any: 'any',
   // Must use external storage and bypasses attribute store altogether.
   attributeAccessInterface: 'attributeAccessInterface',
+  // Must use external storage, but the default value still comes from ZAP.
+  // The implementation of the cluster holds the value and reads the default
+  // once, so there is nothing to store but there is something to generate.
+  defaultOnly: 'defaultOnly',
   resolve: (txt) => {
     switch (txt) {
       case storagePolicy.any:
-      case storagePolicy.attributeAccess:
+      case storagePolicy.attributeAccessInterface:
+      case storagePolicy.defaultOnly:
         return txt
       default:
         return storagePolicy.any
@@ -198,6 +203,64 @@ const storagePolicy = {
 }
 
 exports.storagePolicy = storagePolicy
+
+/**
+ * Who implements a cluster. An ember cluster stores its attributes in the
+ * attribute store that ZAP generates. A code driven cluster implements
+ * ServerClusterInterface and holds its own state, so the attribute store has
+ * nothing to do for it.
+ */
+const clusterImplementation = {
+  ember: 'ember',
+  codeDriven: 'code-driven',
+  resolve: (txt) => {
+    switch (txt) {
+      case clusterImplementation.codeDriven:
+      case clusterImplementation.ember:
+        return txt
+      default:
+        return clusterImplementation.ember
+    }
+  }
+}
+
+exports.clusterImplementation = clusterImplementation
+
+/**
+ * What a cluster implementation needs from ZAP for one of its attributes.
+ * These are the values that an SDK writes in its cluster implementation
+ * metadata; they map onto the storage policies above.
+ */
+const attributeHandling = {
+  // The user picks the storage, as usual.
+  any: 'any',
+  // ZAP provides the default value, the implementation holds the value.
+  defaultOnly: 'default-only',
+  // The implementation provides both, ZAP provides nothing.
+  internal: 'internal',
+  resolve: (txt) => {
+    switch (txt) {
+      case attributeHandling.any:
+      case attributeHandling.defaultOnly:
+      case attributeHandling.internal:
+        return txt
+      default:
+        return null
+    }
+  },
+  toStoragePolicy: (txt) => {
+    switch (txt) {
+      case attributeHandling.defaultOnly:
+        return storagePolicy.defaultOnly
+      case attributeHandling.internal:
+        return storagePolicy.attributeAccessInterface
+      default:
+        return storagePolicy.any
+    }
+  }
+}
+
+exports.attributeHandling = attributeHandling
 
 // When SDK supports a custom device, these are the default values for it.
 exports.customDevice = {

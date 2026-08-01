@@ -41,6 +41,77 @@ async function selectClusterName(db, clusterRef) {
 }
 
 /**
+ * Records who implements a cluster, see dbEnum.clusterImplementation.
+ *
+ * @param {*} db
+ * @param {*} clusterRef
+ * @param {*} implementation
+ * @returns promise that resolves when the cluster is updated
+ */
+async function updateClusterImplementation(db, clusterRef, implementation) {
+  return dbApi.dbUpdate(
+    db,
+    'UPDATE CLUSTER SET IMPLEMENTATION = ? WHERE CLUSTER_ID = ?',
+    [implementation, clusterRef]
+  )
+}
+
+/**
+ * Records the storage policy of an attribute, see dbEnum.storagePolicy. The
+ * policy decides which storage options the user is offered and whether a
+ * default value is of any use.
+ *
+ * @param {*} db
+ * @param {*} attributeRef
+ * @param {*} storagePolicy
+ * @returns promise that resolves when the attribute is updated
+ */
+async function updateAttributeStoragePolicy(db, attributeRef, storagePolicy) {
+  return dbApi.dbUpdate(
+    db,
+    'UPDATE ATTRIBUTE SET STORAGE_POLICY = ? WHERE ATTRIBUTE_ID = ?',
+    [storagePolicy, attributeRef]
+  )
+}
+
+/**
+ * Returns the clusters that an SDK described as implemented in code, for the
+ * given packages.
+ *
+ * @param {*} db
+ * @param {*} packageIds
+ * @returns promise of an array of clusters with their implementation
+ */
+async function selectClusterImplementations(db, packageIds) {
+  let packageIdsArray = Array.isArray(packageIds) ? packageIds : [packageIds]
+  let rows = await dbApi.dbAll(
+    db,
+    `
+SELECT
+  CLUSTER_ID,
+  CODE,
+  MANUFACTURER_CODE,
+  NAME,
+  IMPLEMENTATION
+FROM CLUSTER
+WHERE
+  IMPLEMENTATION IS NOT NULL
+  AND PACKAGE_REF IN (${dbApi.toInClause(packageIdsArray)})
+ORDER BY CODE`,
+    []
+  )
+  return rows.map((row) => {
+    return {
+      id: row.CLUSTER_ID,
+      code: row.CODE,
+      manufacturerCode: row.MANUFACTURER_CODE,
+      name: row.NAME,
+      implementation: row.IMPLEMENTATION
+    }
+  })
+}
+
+/**
  * All cluster details along with their attribute details per endpoint.
  * @param db
  * @param endpointsAndClusters
@@ -303,6 +374,9 @@ async function selectTokenAttributeClustersForEndpoint(
 }
 
 exports.selectClusterName = selectClusterName
+exports.updateClusterImplementation = updateClusterImplementation
+exports.updateAttributeStoragePolicy = updateAttributeStoragePolicy
+exports.selectClusterImplementations = selectClusterImplementations
 exports.selectClusterDetailsFromEnabledClusters =
   selectClusterDetailsFromEnabledClusters
 exports.selectAllUserClustersWithTokenAttributes =

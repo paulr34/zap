@@ -41,6 +41,7 @@ const querySessionNotification = require('../db/query-session-notification')
 const queryPackageNotification = require('../db/query-package-notification')
 const newDataModel = require('./zcl-loader-new-data-model')
 const conformParser = require('../validation/conformance-xml-parser')
+const clusterImplementation = require('./cluster-implementation')
 
 /**
  * Promises to read the JSON file and resolve all the data.
@@ -130,6 +131,17 @@ async function collectDataFromJsonFile(metadataFile, data) {
   if ('attributeAccessInterfaceAttributes' in obj) {
     returnObject.attributeAccessInterfaceAttributes =
       obj.attributeAccessInterfaceAttributes
+  }
+
+  // Which clusters are implemented in code, and what their implementation
+  // needs from ZAP for each attribute. Either the metadata itself, or the name
+  // of a JSON file next to this one that holds it.
+  if ('clusterImplementation' in obj) {
+    returnObject.clusterImplementation =
+      await clusterImplementation.resolveClusterImplementation(
+        metadataFile,
+        obj.clusterImplementation
+      )
   }
   if ('mandatoryDeviceTypes' in obj) {
     returnObject.mandatoryDeviceTypes = obj.mandatoryDeviceTypes
@@ -3113,6 +3125,13 @@ async function loadZclJsonOrProperties(db, metafile, isJson = false) {
         db,
         ctx.packageId,
         ctx.attributeAccessInterfaceAttributes
+      )
+    }
+    if (ctx.clusterImplementation) {
+      await clusterImplementation.loadClusterImplementation(
+        db,
+        ctx.packageId,
+        ctx.clusterImplementation
       )
     }
     if (ctx.featureFlags) {

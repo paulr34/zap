@@ -127,7 +127,11 @@ limitations under the License.
                   selectedCluster.id
                 )
               "
-            />
+            >
+              <q-tooltip v-if="storageLockReason(props.row.label)">
+                {{ storageLockReason(props.row.label) }}
+              </q-tooltip>
+            </q-select>
           </q-td>
           <q-td
             key="singleton"
@@ -186,12 +190,26 @@ limitations under the License.
                   ? 'grey'
                   : ''
               "
-              :disable="isDisabledDefault(props.row.id, selectedCluster.id)"
+              :disable="
+                isDisabledDefault(
+                  props.row.id,
+                  selectedCluster.id,
+                  props.row.label
+                )
+              "
               :model-value="
                 props.row.isNullable &&
-                defaultValueCheck(props.row.id, selectedCluster.id) === null
+                defaultValueCheck(
+                  props.row.id,
+                  selectedCluster.id,
+                  props.row.label
+                ) === null
                   ? 'NULL'
-                  : defaultValueCheck(props.row.id, selectedCluster.id)
+                  : defaultValueCheck(
+                      props.row.id,
+                      selectedCluster.id,
+                      props.row.label
+                    )
               "
               :error="
                 !isDefaultValueValid(
@@ -255,23 +273,53 @@ export default {
         this.forcedExternal = resp.data
       })
     },
-    checkForcedExternal(name) {
-      return this.forcedExternal.some((option) => {
+    // The storage policy that the SDK set for a cluster/attribute pair, or
+    // null when the user is free to choose.
+    forcedStoragePolicy(name) {
+      let option = this.forcedExternal.find((option) => {
         return (
           option.optionCategory == this.selectedCluster.label &&
           option.optionLabel == name
         )
       })
+      return option ? option.optionCode : null
     },
-    //return true and disable default field if Storage is External AND if attribute is not enabled
-    isDisabledDefault(id, selectedClusterId) {
-      return (
+    checkForcedExternal(name) {
+      return this.forcedStoragePolicy(name) != null
+    },
+    // Why the storage of an attribute cannot be changed, for the tooltip.
+    storageLockReason(name) {
+      switch (this.forcedStoragePolicy(name)) {
+        case DbEnum.storagePolicy.defaultOnly:
+          return (
+            'The implementation of this cluster holds the value and reads ' +
+            'the default from the generated configuration, so there is ' +
+            'nothing to store.'
+          )
+        case DbEnum.storagePolicy.attributeAccessInterface:
+          return 'The value of this attribute is provided by the implementation of the cluster.'
+        default:
+          return ''
+      }
+    },
+    /* Return true and disable the default field when the value is not stored
+       by ZAP, unless the implementation of the cluster reads the default from
+       the generated configuration, in which case the default still matters. */
+    isDisabledDefault(id, selectedClusterId, name) {
+      if (
         !this.selection.includes(
           this.hashAttributeIdClusterId(id, selectedClusterId)
-        ) ||
+        )
+      ) {
+        return true
+      }
+      if (this.forcedStoragePolicy(name) == DbEnum.storagePolicy.defaultOnly) {
+        return false
+      }
+      return (
         this.selectionStorageOption[
           this.hashAttributeIdClusterId(id, selectedClusterId)
-        ] == 'External'
+        ] == DbEnum.storageOption.external
       )
     },
     //return true and disable Storage if forced External AND if attribute is not enabled
@@ -289,8 +337,8 @@ export default {
       )
     },
     //if disabled return null to be set as the default value
-    defaultValueCheck(id, selectedClusterId) {
-      if (this.isDisabledDefault(id, selectedClusterId)) {
+    defaultValueCheck(id, selectedClusterId, name) {
+      if (this.isDisabledDefault(id, selectedClusterId, name)) {
         return null
       } else {
         return this.selectionDefault[
