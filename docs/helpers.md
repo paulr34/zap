@@ -13,6 +13,19 @@
 <dt><a href="#module_Templating API_ Command helpers">Templating API: Command helpers</a></dt>
 <dd><p>This module contains the API for templating. For more detailed instructions, read {@tutorial template-tutorial}</p>
 </dd>
+<dt><a href="#module_Templating API_ Matter endpoint config iterators">Templating API: Matter endpoint config iterators</a></dt>
+<dd><p>Iterators over the endpoint configuration.</p>
+<p>The helpers in <code>helper-endpointconfig.js</code> return a whole generated table as
+a single string, which means the layout of that table is decided in
+javascript. The helpers here iterate the same data one row at a time, so a
+template can decide the layout, annotate rows, group them, or leave them
+out. All of them are used inside <code>{{#endpoint_config}}</code>, which is what
+collects the data.</p>
+<p>Companion formatting helpers turn the current row into the C tokens that the
+table needs, so a template can reproduce the output of the aggregate helpers
+exactly, and then change only the part it cares about.</p>
+<p>See docs/endpoint-config-generation.md for the guide and examples.</p>
+</dd>
 <dt><a href="#module_Templating API_ Matter endpoint config helpers">Templating API: Matter endpoint config helpers</a></dt>
 <dd><p>This module contains the API for templating. For more detailed instructions, read {@tutorial template-tutorial}</p>
 </dd>
@@ -1062,6 +1075,493 @@ command is not fixed length
 | commandId |  |
 | options | Returns content in the handlebar template based on the command being fixed length or not as shown in the example above. |
 
+<a name="module_Templating API_ Matter endpoint config iterators"></a>
+
+## Templating API: Matter endpoint config iterators
+Iterators over the endpoint configuration.
+
+The helpers in `helper-endpointconfig.js` return a whole generated table as
+a single string, which means the layout of that table is decided in
+javascript. The helpers here iterate the same data one row at a time, so a
+template can decide the layout, annotate rows, group them, or leave them
+out. All of them are used inside `{{#endpoint_config}}`, which is what
+collects the data.
+
+Companion formatting helpers turn the current row into the C tokens that the
+table needs, so a template can reproduce the output of the aggregate helpers
+exactly, and then change only the part it cares about.
+
+See docs/endpoint-config-generation.md for the guide and examples.
+
+
+* [Templating API: Matter endpoint config iterators](#module_Templating API_ Matter endpoint config iterators)
+    * [~requireEndpointConfigData(context, list, helperName)](#module_Templating API_ Matter endpoint config iterators..requireEndpointConfigData) ⇒
+    * [~deviceIdentifiersOf(endpointType)](#module_Templating API_ Matter endpoint config iterators..deviceIdentifiersOf) ⇒
+    * [~withoutIterationClash(list, name)](#module_Templating API_ Matter endpoint config iterators..withoutIterationClash) ⇒
+    * [~withCommentGroups(list)](#module_Templating API_ Matter endpoint config iterators..withCommentGroups) ⇒
+    * [~endpoint_attributes(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_attributes) ⇒
+    * [~endpoint_clusters(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_clusters) ⇒
+    * [~endpoint_commands(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_commands) ⇒
+    * [~endpoint_events(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_events) ⇒
+    * [~endpoint_types(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_types) ⇒
+    * [~endpoint_fixed_endpoints(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_fixed_endpoints) ⇒
+    * [~endpoint_device_types(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_device_types) ⇒
+    * [~endpoint_min_max_defaults(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_min_max_defaults) ⇒
+    * [~endpoint_reporting_defaults(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_reporting_defaults) ⇒
+    * [~endpoint_long_defaults(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_long_defaults) ⇒
+    * [~endpoint_manufacturer_codes(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_manufacturer_codes) ⇒
+    * [~endpoint_attribute_mask(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_attribute_mask) ⇒
+    * [~endpoint_attribute_default(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_attribute_default) ⇒
+    * [~endpoint_attribute_items(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_attribute_items) ⇒
+    * [~endpoint_cluster_mask(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_cluster_mask) ⇒
+    * [~endpoint_command_mask(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_command_mask) ⇒
+    * [~endpoint_reporting_mask(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_reporting_mask) ⇒
+    * [~endpoint_reporting_items(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_reporting_items) ⇒
+    * [~templateCategory(options)](#module_Templating API_ Matter endpoint config iterators..templateCategory) ⇒
+    * [~endpoint_min_max_items(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_min_max_items) ⇒
+    * [~endpoint_min_max_default(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_min_max_default) ⇒
+    * [~endpoint_min_max_min(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_min_max_min) ⇒
+    * [~endpoint_min_max_max(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_min_max_max) ⇒
+    * [~endpoint_long_default_value(options)](#module_Templating API_ Matter endpoint config iterators..endpoint_long_default_value) ⇒
+    * [~if_endpoint_cluster_in(clusters, options)](#module_Templating API_ Matter endpoint config iterators..if_endpoint_cluster_in) ⇒
+    * [~if_endpoint_cluster_server(options)](#module_Templating API_ Matter endpoint config iterators..if_endpoint_cluster_server) ⇒
+
+<a name="module_Templating API_ Matter endpoint config iterators..requireEndpointConfigData"></a>
+
+### Templating API: Matter endpoint config iterators~requireEndpointConfigData(context, list, helperName) ⇒
+Reports the name of the enclosing block when data is missing, which happens
+when an iterator is used outside of `{{#endpoint_config}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: the list  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| context | <code>\*</code> | handlebars context |
+| list | <code>\*</code> | list that should have been collected |
+| helperName | <code>\*</code> | name of the helper, used in the error message |
+
+<a name="module_Templating API_ Matter endpoint config iterators..deviceIdentifiersOf"></a>
+
+### Templating API: Matter endpoint config iterators~deviceIdentifiersOf(endpointType) ⇒
+Device types of an endpoint type, leaving out the entries that carry no
+device identifier. Those contribute nothing to the generated arrays, so
+counting them would put the offsets of the following endpoints out by one.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: array of device identifiers  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| endpointType | <code>\*</code> | endpoint type, may be undefined |
+
+<a name="module_Templating API_ Matter endpoint config iterators..withoutIterationClash"></a>
+
+### Templating API: Matter endpoint config iterators~withoutIterationClash(list, name) ⇒
+Renames the `index` of a row, which some lists use for an index into a
+generated table, out of the way.
+
+Iteration adds an `index` and a `count` of its own, which is what
+`{{#first}}`, `{{#last}}` and `{{#not_last}}` read. A row field of the same
+name would hide those and make the position of a row look like something
+else, so the row keeps its value under a name that says what it is.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: copy of the list, with the row index renamed  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| list | <code>\*</code> | list of rows |
+| name | <code>\*</code> | name to give the index of the row |
+
+<a name="module_Templating API_ Matter endpoint config iterators..withCommentGroups"></a>
+
+### Templating API: Matter endpoint config iterators~withCommentGroups(list) ⇒
+Marks the rows that start a new comment group.
+
+The aggregate helpers print a comment naming the endpoint and the cluster
+whenever consecutive rows belong to a different cluster. Templates need the
+same information to reproduce that grouping, so every row reports whether it
+opens a group.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: copy of the list, with isNewComment on every row  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| list | <code>\*</code> | list of rows |
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_attributes"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_attributes(options) ⇒
+Iterates over the attributes of the endpoint configuration, in the order in
+which they appear in the generated attribute table.
+
+Row data includes the generated tokens (id, type, size, mask, defaultValue),
+where the attribute came from (endpointId, clusterId, clusterCode,
+clusterName, clusterSide), and how it is configured (storage, isWritable,
+isReadable, isNullable, isSingleton, isReportable).
+
+example:
+{{#endpoint_attributes}}
+  { {{endpoint_attribute_default}}, {{id}}, {{size}}, {{type}}, {{endpoint_attribute_mask}} },
+{{/endpoint_attributes}}
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_clusters"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_clusters(options) ⇒
+Iterates over the clusters of the endpoint configuration.
+
+Row data includes the indexes into the attribute, command and event tables,
+so a template can emit its own cluster table, and omitsAttributeMetadata,
+omitsCommandMetadata and omitsEventMetadata, which tell whether the metadata
+of that cluster was left out on purpose.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_commands"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_commands(options) ⇒
+Iterates over the commands of the endpoint configuration.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_events"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_events(options) ⇒
+Iterates over the events of the endpoint configuration.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_types"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_types(options) ⇒
+Iterates over the endpoint types, which is what the generated endpoint type
+table is built from. Every row carries the index of its first cluster, the
+number of clusters, and the size of the attributes of the endpoint.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_fixed_endpoints"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_fixed\_endpoints(options) ⇒
+Iterates over the endpoints of the configuration, with everything the
+generated fixed endpoint arrays need: identifier, profile, network, parent
+and the index of the endpoint type of the endpoint.
+
+Values are provided both as numbers and preformatted as hexadecimal, since
+the generated arrays use hexadecimal.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_device_types"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_device\_types(options) ⇒
+Iterates over all device types of the configuration, one row per device type
+per endpoint, which is what the generated device type array is built from.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_min_max_defaults"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_min\_max\_defaults(options) ⇒
+Iterates over the attributes that have a minimum and a maximum, which is
+what the generated min/max table is built from.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_reporting_defaults"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_reporting\_defaults(options) ⇒
+Iterates over the attributes that have reporting enabled, which is what the
+generated reporting configuration table is built from.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_long_defaults"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_long\_defaults(options) ⇒
+Iterates over the default values that do not fit inline, which is what the
+generated defaults blob is built from. Every row carries its `offset` into
+that blob and the number of bytes it occupies.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_manufacturer_codes"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_manufacturer\_codes(options) ⇒
+Iterates over the manufacturer code pairs of the configuration. The list is
+selected with the type hash argument, which is one of 'attribute', 'command'
+or 'cluster' and defaults to 'attribute'. Every row carries its
+`entryIndex` into the matching generated table and the manufacturer code.
+
+example:
+{{#endpoint_manufacturer_codes type="cluster"}}
+  { {{entryIndex}}, {{mfgCode}} }, \
+{{/endpoint_manufacturer_codes}}
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_attribute_mask"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_attribute\_mask(options) ⇒
+Formats the mask of the current attribute, inside
+`{{#endpoint_attributes}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: attribute mask expression  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_attribute_default"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_attribute\_default(options) ⇒
+Formats the default value of the current attribute, inside
+`{{#endpoint_attributes}}`. Takes the same endian and pointer hash
+arguments as `{{endpoint_attribute_list}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: default value expression  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_attribute_items"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_attribute\_items(options) ⇒
+Formats the current attribute as the body of a C struct initializer, in the
+order given by the order hash argument, which defaults to the order used by
+`{{endpoint_attribute_list}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: comma separated initializer items  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_cluster_mask"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_cluster\_mask(options) ⇒
+Formats the mask of the current cluster, inside `{{#endpoint_clusters}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: cluster mask expression  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_command_mask"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_command\_mask(options) ⇒
+Formats the mask of the current command, inside `{{#endpoint_commands}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: command mask expression  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_reporting_mask"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_reporting\_mask(options) ⇒
+Formats the mask of the current reporting row, inside
+`{{#endpoint_reporting_defaults}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: cluster mask expression  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_reporting_items"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_reporting\_items(options) ⇒
+Formats the current reporting row as the body of a C struct initializer.
+Takes the same order and minmaxorder hash arguments as
+`{{endpoint_reporting_config_defaults}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: comma separated initializer items  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..templateCategory"></a>
+
+### Templating API: Matter endpoint config iterators~templateCategory(options) ⇒
+Returns the template package category, which min/max formatting needs in
+order to apply the Zigbee restriction on value sizes.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: category or undefined  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_min_max_items"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_min\_max\_items(options) ⇒
+Formats the current min/max row as the body of a C struct initializer, in
+the order given by the order hash argument, which defaults to the order used
+by `{{endpoint_attribute_min_max_list}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: comma separated initializer items  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_min_max_default"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_min\_max\_default(options) ⇒
+Formats the default value of the current min/max row.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: default value, cast to uint16_t  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_min_max_min"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_min\_max\_min(options) ⇒
+Formats the minimum of the current min/max row.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: minimum, cast to uint16_t  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_min_max_max"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_min\_max\_max(options) ⇒
+Formats the maximum of the current min/max row.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: maximum, cast to uint16_t  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..endpoint_long_default_value"></a>
+
+### Templating API: Matter endpoint config iterators~endpoint\_long\_default\_value(options) ⇒
+Formats the bytes of the current long default value, inside
+`{{#endpoint_long_defaults}}`. Takes the same endian hash argument as
+`{{endpoint_attribute_long_defaults}}`.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: comma separated list of bytes  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config iterators..if_endpoint_cluster_in"></a>
+
+### Templating API: Matter endpoint config iterators~if\_endpoint\_cluster\_in(clusters, options) ⇒
+Block helper that runs its body when the current row belongs to a cluster
+named by the argument. Names are matched case insensitively, codes in any
+numeric notation, and several of them can be given separated by commas or
+newlines.
+
+example:
+{{#endpoint_attributes}}
+{{#if_endpoint_cluster_in "Identify,0x0006"}}...{{else}}...{{/if_endpoint_cluster_in}}
+{{/endpoint_attributes}}
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| clusters | <code>\*</code> | cluster names or codes |
+| options | <code>\*</code> |  |
+
+<a name="module_Templating API_ Matter endpoint config iterators..if_endpoint_cluster_server"></a>
+
+### Templating API: Matter endpoint config iterators~if\_endpoint\_cluster\_server(options) ⇒
+Block helper that runs its body when the current row belongs to a server
+side cluster.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config iterators</code>](#module_Templating API_ Matter endpoint config iterators)  
+**Returns**: promise of a rendered block  
+
+| Param | Type |
+| --- | --- |
+| options | <code>\*</code> | 
+
 <a name="module_Templating API_ Matter endpoint config helpers"></a>
 
 ## Templating API: Matter endpoint config helpers
@@ -1110,6 +1610,7 @@ This module contains the API for templating. For more detailed instructions, rea
     * [~collectAttributeSizes(db, zclPackageIds, endpointTypes)](#module_Templating API_ Matter endpoint config helpers..collectAttributeSizes) ⇒
     * [~collectAttributeTypeInfo(db, zclPackageIds, endpointTypes)](#module_Templating API_ Matter endpoint config helpers..collectAttributeTypeInfo) ⇒
     * [~isGlobalAttrExcludedFromMetadata(attr)](#module_Templating API_ Matter endpoint config helpers..isGlobalAttrExcludedFromMetadata) ⇒
+    * [~applyMetadataOmissions(cluster, omitted)](#module_Templating API_ Matter endpoint config helpers..applyMetadataOmissions)
     * [~endpoint_config(options)](#module_Templating API_ Matter endpoint config helpers..endpoint_config) ⇒
 
 <a name="module_Templating API_ Matter endpoint config helpers..endpoint_type_count"></a>
@@ -1400,6 +1901,11 @@ Get count of endpoint type attributes.
 ### Templating API: Matter endpoint config helpers~endpoint\_attribute\_list(options) ⇒
 Get endpoint type attribute information.
 
+This emits the whole attribute table as one blob. Templates that need to
+decide the layout themselves, or that need to leave attributes out, should
+iterate with `{{#endpoint_attributes}}` instead. See
+docs/endpoint-config-generation.md.
+
 **Kind**: inner method of [<code>Templating API: Matter endpoint config helpers</code>](#module_Templating API_ Matter endpoint config helpers)  
 **Returns**: endpoint type attribute information  
 
@@ -1610,11 +2116,41 @@ Checks if global attribute is excluded from the meta data.
 | --- | --- |
 | attr | <code>\*</code> | 
 
+<a name="module_Templating API_ Matter endpoint config helpers..applyMetadataOmissions"></a>
+
+### Templating API: Matter endpoint config helpers~applyMetadataOmissions(cluster, omitted)
+Drops the metadata that a template asked not to be generated for a cluster.
+
+Code driven clusters keep their own attribute, command and event tables in
+C++, so generating them here as well costs flash without adding anything.
+Dropping the rows at load time, before indexes and counts are calculated,
+keeps the generated tables and the indexes pointing into them consistent.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config helpers</code>](#module_Templating API_ Matter endpoint config helpers)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| cluster | <code>\*</code> | cluster as loaded from the database |
+| omitted | <code>\*</code> | omitted metadata token sets |
+
 <a name="module_Templating API_ Matter endpoint config helpers..endpoint_config"></a>
 
 ### Templating API: Matter endpoint config helpers~endpoint\_config(options) ⇒
 Starts the endpoint configuration block.,
 longDefaults: longDefaults
+
+Hash arguments:
+- allowUnknownStorageOption: tolerate attributes with an unknown storage
+  policy instead of failing generation.
+- spaceForDefaultValue: how many bytes a default value can occupy inline
+  before it moves into the long defaults table.
+- isReadableMaskGenerationEnabled: add the readable mask to attributes.
+- omitAttributeMetadataClusters, omitCommandMetadataClusters,
+  omitEventMetadataClusters: cluster names or codes, separated by commas or
+  newlines, whose metadata is left out of the generated tables. The clusters
+  themselves stay in the cluster table, with a count of zero. Prefer codes
+  for names that contain a slash, such as On/Off, because handlebars reads a
+  slash inside a block tag as the start of the closing tag.
 
 **Kind**: inner method of [<code>Templating API: Matter endpoint config helpers</code>](#module_Templating API_ Matter endpoint config helpers)  
 **Returns**: a promise of a rendered block  

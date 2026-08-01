@@ -22,6 +22,7 @@
  */
 
 const cHelper = require('./helper-c.js')
+const format = require('./endpointconfig-format.js')
 const templateUtil = require('./template-util')
 const queryEndpoint = require('../db/query-endpoint.js')
 const queryEndpointType = require('../db/query-endpoint-type.js')
@@ -302,14 +303,7 @@ function endpoint_cluster_count(options) {
 function endpoint_cluster_list(options) {
   let ret = '{ \\\n'
   this.clusterList.forEach((c) => {
-    let mask = ''
-    if (c.mask.length == 0) {
-      mask = '0'
-    } else {
-      mask = c.mask
-        .map((m) => `ZAP_CLUSTER_MASK(${m.toUpperCase()})`)
-        .join(' | ')
-    }
+    let mask = format.clusterMask(c.mask)
     ret = ret.concat(
       `  { ${c.clusterId}, ZAP_ATTRIBUTE_INDEX(${c.attributeIndex}), ${c.attributeCount}, ${c.attributeSize}, ${mask}, ${c.functions} }, /* ${c.comment} */ \\\n`
     )
@@ -333,14 +327,7 @@ function endpoint_command_list(options) {
       comment = cmd.comment
     }
 
-    let mask = ''
-    if (cmd.mask.length == 0) {
-      mask = '0'
-    } else {
-      mask = cmd.mask
-        .map((m) => `ZAP_COMMAND_MASK(${m.toUpperCase()})`)
-        .join(' | ')
-    }
+    let mask = format.commandMask(cmd.mask)
     ret += `  { ${cmd.clusterId}, ${cmd.commandId}, ${mask} }, /* ${cmd.name} */ \\\n`
   })
   ret += '}\n'
@@ -361,6 +348,11 @@ function endpoint_attribute_count(options) {
 /**
  * Get endpoint type attribute information.
  *
+ * This emits the whole attribute table as one blob. Templates that need to
+ * decide the layout themselves, or that need to leave attributes out, should
+ * iterate with `{{#endpoint_attributes}}` instead. See
+ * docs/endpoint-config-generation.md.
+ *
  * @param {*} options
  * @returns endpoint type attribute information
  */
@@ -372,71 +364,15 @@ function endpoint_attribute_list(options) {
   }
   let comment = null
 
-  let littleEndian = true
-  let pointerSize = 4
-  if (options.hash.endian == 'big') {
-    littleEndian = false
-    if (typeof options.hash.pointer != 'undefined') {
-      pointerSize = options.hash.pointer
-    }
-  }
-
   let ret = '{ \\\n'
   this.attributeList.forEach((at) => {
     if (at.comment != comment) {
       ret += `\\\n  /* ${at.comment} */ \\\n`
       comment = at.comment
     }
-
-    let mask = ''
-    if (at.mask.length == 0) {
-      mask = '0'
-    } else {
-      mask = at.mask
-        .map((m) => `ZAP_ATTRIBUTE_MASK(${m.toUpperCase()})`)
-        .join(' | ')
-    }
-    // If no default value is found, default to 0
-    let finalDefaultValue
-    if (!at.defaultValue) {
-      finalDefaultValue = `ZAP_EMPTY_DEFAULT()`
-    } else if (at.isMacro) {
-      finalDefaultValue = at.defaultValue
-    } else {
-      let defaultValue = at.defaultValue
-      if (!littleEndian) {
-        defaultValue = Number(defaultValue)
-          .toString(16)
-          .padStart(6, '0x0000')
-          .padEnd(2 + 2 * pointerSize, '0')
-      }
-      finalDefaultValue = `ZAP_SIMPLE_DEFAULT(${defaultValue})`
-    }
-    let orderTokens = order.split(',').map((x) => (x ? x.trim() : ''))
-    let items = []
-    orderTokens.forEach((tok) => {
-      switch (tok) {
-        case 'default':
-          items.push(finalDefaultValue)
-          break
-        case 'id':
-          items.push(at.id)
-          break
-        case 'size':
-          items.push(at.size)
-          break
-        case 'type':
-          items.push(at.type)
-          break
-        case 'mask':
-          items.push(mask)
-          break
-        default:
-          throw new Error(`Unknown token '${tok}' in order optional argument`)
-      }
-    })
-
-    ret += `  { ${items.join(', ')} }, /* ${at.name} */  \\\n`
+    ret += `  { ${format.attributeItems(at, order, options.hash)} }, /* ${
+      at.name
+    } */  \\\n`
   })
   ret += '}\n'
 
@@ -597,68 +533,11 @@ function endpoint_attribute_min_max_list(options) {
   let ret = '{ \\\n'
   const category = options.data?.root?.global?.genTemplatePackage?.category
   this.minMaxList.forEach((mm, index) => {
-    if (mm.typeSize > 2 && category === dbEnum.helperCategory.zigbee) {
-      throw new Error(
-        `Can't have min/max for attributes larger than 2 bytes like '${mm.name}'`
-      )
-    }
     if (mm.comment != comment) {
       ret += `\\\n  /* ${mm.comment} */ \\\n`
       comment = mm.comment
     }
-
-    let def = parseInt(mm.default)
-    let min = parseInt(mm.min)
-    let max = parseInt(mm.max)
-
-    if (isNaN(def)) def = 0
-    if (isNaN(min)) {
-      if (mm.typeSize < 1)
-        throw new Error(
-          'Invalid type size for min value: ' + JSON.stringify(mm)
-        )
-      if (mm.isTypeSigned) {
-        min = '0x80' + '00'.repeat(mm.typeSize - 1)
-      } else {
-        min = 0
-      }
-    }
-    if (isNaN(max)) {
-      if (mm.typeSize < 1)
-        throw new Error(
-          'Invalid type size for max value: ' + JSON.stringify(mm)
-        )
-      if (mm.isTypeSigned) {
-        max = '0x7F' + 'FF'.repeat(mm.typeSize - 1)
-      } else {
-        max = '0x' + 'FF'.repeat(mm.typeSize)
-      }
-    }
-
-    let defS =
-      (def >= 0 ? '' : '-') + '0x' + Math.abs(def).toString(16).toUpperCase()
-    let minS =
-      (min >= 0 ? '' : '-') + '0x' + Math.abs(min).toString(16).toUpperCase()
-    let maxS =
-      (max >= 0 ? '' : '-') + '0x' + Math.abs(max).toString(16).toUpperCase()
-    let defMinMaxItems = []
-    order
-      .split(',')
-      .map((x) => (x ? x.trim() : ''))
-      .forEach((tok) => {
-        switch (tok) {
-          case 'def':
-            defMinMaxItems.push(`(uint16_t)${defS}`)
-            break
-          case 'min':
-            defMinMaxItems.push(`(uint16_t)${minS}`)
-            break
-          case 'max':
-            defMinMaxItems.push(`(uint16_t)${maxS}`)
-            break
-        }
-      })
-    ret += `  { ${defMinMaxItems.join(', ')} }${
+    ret += `  { ${format.minMaxItems(mm, order, category)} }${
       index == this.minMaxList.length - 1 ? '' : ','
     } /* ${mm.name} */ \\\n`
   })
@@ -692,63 +571,9 @@ function endpoint_reporting_config_defaults(options) {
       ret += `\\\n  /* ${r.comment} */ \\\n`
       comment = r.comment
     }
-
-    let minmaxItems = []
-    let minmaxToks = minmaxorder.split(',').map((x) => (x ? x.trim() : ''))
-    minmaxToks.forEach((tok) => {
-      switch (tok) {
-        case 'min':
-          minmaxItems.push(r.minOrSource)
-          break
-        case 'max':
-          minmaxItems.push(r.maxOrEndpoint)
-          break
-        case 'change':
-          minmaxItems.push(r.reportableChangeOrTimeout)
-          break
-      }
-    })
-    let minmax = minmaxItems.join(', ')
-    let mask = ''
-    if (r.mask.length == 0) {
-      mask = '0'
-    } else {
-      mask = r.mask
-        .map((m) => `ZAP_CLUSTER_MASK(${m.toUpperCase()})`)
-        .join(' | ')
-    }
-    let orderTokens = order.split(',').map((x) => (x ? x.trim() : ''))
-    let items = []
-    orderTokens.forEach((tok) => {
-      switch (tok) {
-        case 'direction':
-          items.push(`ZAP_REPORT_DIRECTION(${r.direction})`)
-          break
-        case 'endpoint':
-          items.push(r.endpoint)
-          break
-        case 'clusterId':
-          items.push(r.clusterId)
-          break
-        case 'attributeId':
-          items.push(r.attributeId)
-          break
-        case 'mask':
-          items.push(mask)
-          break
-        case 'mfgCode':
-          items.push(r.mfgCode)
-          break
-        case 'minmax':
-          items.push(`{{ ${minmax} }}`)
-          break
-        default:
-          throw new Error(`Unknown token '${tok}' in order optional argument`)
-      }
-    })
-
-    let singleRow = `  { ${items.join(', ')} }, /* ${r.name} */ \\\n`
-    ret += singleRow
+    ret += `  { ${format.reportingItems(r, order, minmaxorder)} }, /* ${
+      r.name
+    } */ \\\n`
   })
   ret += '}\n'
 
@@ -783,22 +608,11 @@ function endpoint_attribute_long_defaults_count(options) {
  */
 function endpoint_attribute_long_defaults(options) {
   let comment = null
-
-  let littleEndian = true
-  if (options.hash.endian == 'big') {
-    littleEndian = false
-  }
+  let littleEndian = format.endianOptions(options.hash).littleEndian
 
   let ret = '{ \\\n'
   this.longDefaultsList.forEach((ld) => {
-    let value = ld.value
-    if (littleEndian && !types.isString(ld.type)) {
-      // ld.value is in big-endian order.  For types for which endianness
-      // matters, we need to reverse it.
-      let valArr = value.split(/\s*,\s*/).filter((s) => s.length != 0)
-      valArr.reverse()
-      value = valArr.join(', ') + ', '
-    }
+    let value = format.longDefaultValue(ld, options.hash)
     if (ld.comment != comment) {
       ret += `\\\n  /* ${ld.comment}, ${
         littleEndian ? 'little-endian' : 'big-endian'
@@ -914,7 +728,11 @@ async function collectAttributes(
     let endpoint = {
       clusterIndex: clusterIndex,
       clusterCount: ept.clusters.length,
-      attributeSize: 0
+      attributeSize: 0,
+      endpointId: ept.endpointId,
+      endpointTypeName: ept.name,
+      deviceIdentifier: ept.deviceIdentifier,
+      deviceVersion: ept.deviceVersion
     }
 
     let device = {
@@ -932,16 +750,25 @@ async function collectAttributes(
       let cluster = {
         endpointId: ept.endpointId,
         clusterId: asMEI(c.manufacturerCode, c.code),
+        clusterCode: c.code,
         clusterName: c.name,
+        clusterDefine: c.define,
         clusterSide: c.side,
+        manufacturerCode: c.manufacturerCode,
         attributeIndex: attributeIndex,
         attributeCount: c.attributes.length,
         attributeSize: 0,
         eventIndex: eventIndex,
         eventCount: c.events.length,
+        commandCount: c.commands.length,
         mask: [],
         commands: [],
         functions: 'NULL',
+        // Set when a template asked for this cluster's metadata to be left
+        // out, which is how code driven clusters avoid duplicated tables.
+        omitsAttributeMetadata: c.omitsAttributeMetadata === true,
+        omitsCommandMetadata: c.omitsCommandMetadata === true,
+        omitsEventMetadata: c.omitsEventMetadata === true,
         comment: `Endpoint: ${ept.endpointId}, Cluster: ${c.name} (${c.side})`
       }
       clusterAttributeSize = 0
@@ -1053,7 +880,12 @@ async function collectAttributes(
             index: longDefaultsIndex,
             name: a.name,
             comment: cluster.comment,
-            type: a.type
+            type: a.type,
+            code: a.code,
+            endpointId: ept.endpointId,
+            clusterCode: c.code,
+            clusterName: c.name,
+            clusterSide: c.side
           }
           attributeDefaultValue = `ZAP_LONG_DEFAULTS_INDEX(${longDefaultsIndex})`
           defaultValueIsMacro = true
@@ -1100,7 +932,12 @@ async function collectAttributes(
             name: a.name,
             comment: cluster.comment,
             typeSize: typeSize,
-            isTypeSigned: type_size_and_sign.isTypeSigned
+            isTypeSigned: type_size_and_sign.isTypeSigned,
+            code: a.code,
+            endpointId: ept.endpointId,
+            clusterCode: c.code,
+            clusterName: c.name,
+            clusterSide: c.side
           }
 
           attributeDefaultValue = `ZAP_MIN_MAX_DEFAULTS_INDEX(${minMaxIndex})`
@@ -1124,7 +961,11 @@ async function collectAttributes(
             maxOrEndpoint: a.maxInterval,
             reportableChangeOrTimeout: a.reportableChange,
             name: a.name,
-            comment: cluster.comment
+            comment: cluster.comment,
+            code: a.code,
+            clusterCode: c.code,
+            clusterName: c.name,
+            clusterSide: c.side
           }
           reportList.push(rpt)
         }
@@ -1190,7 +1031,26 @@ async function collectAttributes(
           defaultValue: attributeDefaultValue, // default value, pointer to default value, or pointer to min/max/value triplet.
           isMacro: defaultValueIsMacro,
           name: a.name,
-          comment: cluster.comment
+          comment: cluster.comment,
+          // Everything below describes where this attribute came from and how
+          // it is configured. Templates that iterate attributes use these to
+          // filter, group or annotate rows.
+          code: a.code,
+          define: a.define,
+          zclType: a.type,
+          storage: a.storage,
+          storageSize: storageSize,
+          isWritable: a.isWritable,
+          isReadable: a.isReadable,
+          isNullable: a.isNullable,
+          isSingleton: a.isSingleton,
+          isReportable: a.includedReportable ? true : false,
+          manufacturerCode: a.manufacturerCode,
+          endpointId: ept.endpointId,
+          clusterId: cluster.clusterId,
+          clusterCode: c.code,
+          clusterName: c.name,
+          clusterSide: c.side
         }
         attributeList.push(attr)
 
@@ -1244,7 +1104,15 @@ async function collectAttributes(
         let command = {
           endpointId: ept.endpointId,
           clusterId: asMEI(c.manufacturerCode, c.code),
+          clusterCode: c.code,
+          clusterName: c.name,
+          clusterSide: c.side,
           commandId: asMEI(cmd.manufacturerCode, cmd.code),
+          code: cmd.code,
+          source: cmd.source,
+          isIncoming: cmd.isIncoming ? true : false,
+          isOutgoing: cmd.isOutgoing ? true : false,
+          manufacturerCode: cmd.manufacturerCode,
           mask: mask,
           name: cmd.name,
           comment: cluster.comment,
@@ -1272,7 +1140,14 @@ async function collectAttributes(
       c.events.forEach((ev) => {
         let event = {
           eventId: asMEI(ev.manufacturerCode, ev.code),
+          code: ev.code,
           name: ev.name,
+          manufacturerCode: ev.manufacturerCode,
+          endpointId: ept.endpointId,
+          clusterId: cluster.clusterId,
+          clusterCode: c.code,
+          clusterName: c.name,
+          clusterSide: c.side,
           comment: cluster.comment
         }
         eventList.push(event)
@@ -1387,8 +1262,47 @@ function isGlobalAttrExcludedFromMetadata(attr) {
 }
 
 /**
+ * Drops the metadata that a template asked not to be generated for a cluster.
+ *
+ * Code driven clusters keep their own attribute, command and event tables in
+ * C++, so generating them here as well costs flash without adding anything.
+ * Dropping the rows at load time, before indexes and counts are calculated,
+ * keeps the generated tables and the indexes pointing into them consistent.
+ *
+ * @param {*} cluster cluster as loaded from the database
+ * @param {*} omitted omitted metadata token sets
+ */
+function applyMetadataOmissions(cluster, omitted) {
+  if (format.clusterMatches(cluster, omitted.attributes)) {
+    cluster.attributes = []
+    cluster.omitsAttributeMetadata = true
+  }
+  if (format.clusterMatches(cluster, omitted.commands)) {
+    cluster.commands = []
+    cluster.omitsCommandMetadata = true
+  }
+  if (format.clusterMatches(cluster, omitted.events)) {
+    cluster.events = []
+    cluster.omitsEventMetadata = true
+  }
+}
+
+/**
  * Starts the endpoint configuration block.,
  * longDefaults: longDefaults
+ *
+ * Hash arguments:
+ * - allowUnknownStorageOption: tolerate attributes with an unknown storage
+ *   policy instead of failing generation.
+ * - spaceForDefaultValue: how many bytes a default value can occupy inline
+ *   before it moves into the long defaults table.
+ * - isReadableMaskGenerationEnabled: add the readable mask to attributes.
+ * - omitAttributeMetadataClusters, omitCommandMetadataClusters,
+ *   omitEventMetadataClusters: cluster names or codes, separated by commas or
+ *   newlines, whose metadata is left out of the generated tables. The clusters
+ *   themselves stay in the cluster table, with a count of zero. Prefer codes
+ *   for names that contain a slash, such as On/Off, because handlebars reads a
+ *   slash inside a block tag as the start of the closing tag.
  *
  * @param {*} options
  * @returns a promise of a rendered block
@@ -1400,6 +1314,15 @@ function endpoint_config(options) {
   }
   let db = this.global.db
   let sessionId = this.global.sessionId
+  let omittedMetadata = {
+    attributes: format.parseClusterTokens(
+      options.hash.omitAttributeMetadataClusters
+    ),
+    commands: format.parseClusterTokens(
+      options.hash.omitCommandMetadataClusters
+    ),
+    events: format.parseClusterTokens(options.hash.omitEventMetadataClusters)
+  }
   let collectAttributesOptions = {
     allowUnknownStorageOption:
       options.hash.allowUnknownStorageOption !== 'false',
@@ -1502,7 +1425,11 @@ function endpoint_config(options) {
                   })
               )
             })
-            return Promise.all(ps)
+            return Promise.all(ps).then(() =>
+              clusters.forEach((cl) =>
+                applyMetadataOmissions(cl, omittedMetadata)
+              )
+            )
           })
         )
       })
@@ -1525,6 +1452,7 @@ function endpoint_config(options) {
     )
     .then((collection) => {
       Object.assign(newContext, collection)
+      newContext.omittedMetadata = omittedMetadata
     })
     .then(() => options.fn(newContext))
     .catch((err) =>
