@@ -630,11 +630,13 @@ function versionsCheck() {
   let nodeVersion = process.version
   let electronVersion = process.versions.electron
   let ret = true
+  // These are warnings, so they go to stderr: commands that print a machine
+  // readable result on stdout have to stay pipe-friendly.
   if (!isMatchingVersion(expectedNodeVersion, nodeVersion)) {
     ret = false
-    console.log(`Expected node versions: ${expectedNodeVersion}`)
-    console.log(`Provided node version: ${nodeVersion}`)
-    console.log(
+    printToStderr(`Expected node versions: ${expectedNodeVersion}`)
+    printToStderr(`Provided node version: ${nodeVersion}`)
+    printToStderr(
       'WARNING: you are using different node version than recommended.'
     )
   }
@@ -643,9 +645,9 @@ function versionsCheck() {
     !isMatchingVersion(expectedElectronVersion, electronVersion)
   ) {
     ret = false
-    console.log(`Expected electron version: ${expectedElectronVersion}`)
-    console.log(`Provided electron version: ${electronVersion}`)
-    console.log(
+    printToStderr(`Expected electron version: ${expectedElectronVersion}`)
+    printToStderr(`Provided electron version: ${electronVersion}`)
+    printToStderr(
       'WARNING: you are using different electron version that recommended.'
     )
   }
