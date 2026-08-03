@@ -395,6 +395,53 @@ function isReadOnly(operation) {
 }
 
 /**
+ * Refuses to edit a configuration whose custom XML is not the custom XML it
+ * names.
+ *
+ * The importer answers a custom XML it cannot load by moving on: the package is
+ * dropped, or, when the database holds another one, quietly put in its place.
+ * Either way the session is built on a different data model than the file
+ * describes, and saving writes that difference back into the file. Reading such
+ * a configuration is still allowed, since that is how you find out.
+ *
+ * @param {*} ctx
+ * @param {Array} operations The operations about to run.
+ * @returns {void} nothing, or throws
+ */
+function requireResolvedPackages(ctx, operations) {
+  let unresolved = ctx.unresolvedCustomXml || []
+  if (unresolved.length === 0 || ctx.argv.force === true) return
+  // Repairing the reference is itself an edit, so the package operations are
+  // the way out of this rather than something to stop.
+  if (
+    operations.length > 0 &&
+    operations.every((o) => o.op.startsWith('package.'))
+  ) {
+    return
+  }
+
+  let hints = unresolved.map(
+    (missing) =>
+      `  ${missing.declared}${missing.exists ? ' (named but not loaded)' : ' (no such file)'}`
+  )
+  let substituted = ctx.substitutedCustomXml || []
+  substituted.forEach((p) =>
+    hints.push(`  ${p.path} was loaded instead, though the file never names it`)
+  )
+  hints.push(
+    `Saving would write that difference back into the file. Point it at the file:`,
+    `  zap edit package add ${ctx.zapFile} --xml <file.xml>`,
+    `or drop the reference:`,
+    `  zap edit package remove ${ctx.zapFile} --xml ${unresolved[0].declared}`,
+    `or pass --force to edit it as it loaded.`
+  )
+  throw new CliError(
+    `${ctx.zapFile} names ${unresolved.length} custom XML package(s) this session does not have`,
+    hints
+  )
+}
+
+/**
  * Runs a parsed `zap edit` command line.
  *
  * @param {*} argv Result of `parseEditCommandLine`.
@@ -467,6 +514,7 @@ async function run(argv, options = {}) {
     // Snapshot the state up front so that afterwards we can report what this
     // run introduced rather than everything the file already had.
     let mutating = startFromBlank || operations.some((o) => !isReadOnly(o.op))
+    if (mutating) requireResolvedPackages(ctx, operations)
     let validationEnabled = argv.validate !== false && mutating
     let before =
       validationEnabled && !startFromBlank

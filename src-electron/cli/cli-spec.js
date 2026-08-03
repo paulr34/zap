@@ -512,6 +512,46 @@ const groups = {
         }
       }
     }
+  },
+
+  package: {
+    describe:
+      'Add and remove the custom XML a configuration reads its clusters from.',
+    operations: {
+      list: {
+        operation: 'package.list',
+        describe:
+          'List the packages of a configuration, including custom XML it names but does not have.',
+        readOnly: true,
+        options: {
+          filter: filterOption
+        }
+      },
+      add: {
+        operation: 'package.add',
+        describe:
+          'Load a custom ZCL XML file, making its clusters available to this configuration. Same as choosing the file on the Extensions page.',
+        options: {
+          xml: {
+            desc: 'Path of the ZCL XML file. Repeat for several files.',
+            type: 'array',
+            required: true
+          }
+        }
+      },
+      remove: {
+        operation: 'package.remove',
+        describe:
+          'Take a custom ZCL XML file back out. The endpoint configuration that came from it goes too, so this needs --force when the clusters are in use.',
+        options: {
+          xml: {
+            desc: 'Path or file name of the custom XML to remove.',
+            type: 'string',
+            required: true
+          }
+        }
+      }
+    }
   }
 }
 

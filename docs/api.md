@@ -586,6 +586,7 @@ disagree about what exists.
     * [~outputPath(argv)](#module_CLI API_ edit command line..outputPath) ⇒ <code>string</code>
     * [~requireNothingToOverwrite(argv)](#module_CLI API_ edit command line..requireNothingToOverwrite) ⇒ <code>undefined</code>
     * [~isReadOnly(operation)](#module_CLI API_ edit command line..isReadOnly) ⇒ <code>boolean</code>
+    * [~requireResolvedPackages(ctx, operations)](#module_CLI API_ edit command line..requireResolvedPackages) ⇒ <code>void</code>
     * [~run(argv, options)](#module_CLI API_ edit command line..run) ⇒ <code>Promise.&lt;number&gt;</code>
 
 <a name="module_CLI API_ edit command line..toYargsOption"></a>
@@ -831,6 +832,26 @@ True for operations that only read the configuration.
 | Param | Type | Description |
 | --- | --- | --- |
 | operation | <code>string</code> | Dotted operation name. |
+
+<a name="module_CLI API_ edit command line..requireResolvedPackages"></a>
+
+### CLI API: edit command line~requireResolvedPackages(ctx, operations) ⇒ <code>void</code>
+Refuses to edit a configuration whose custom XML is not the custom XML it
+names.
+
+The importer answers a custom XML it cannot load by moving on: the package is
+dropped, or, when the database holds another one, quietly put in its place.
+Either way the session is built on a different data model than the file
+describes, and saving writes that difference back into the file. Reading such
+a configuration is still allowed, since that is how you find out.
+
+**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Returns**: <code>void</code> - nothing, or throws  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ctx | <code>\*</code> |  |
+| operations | <code>Array</code> | The operations about to run. |
 
 <a name="module_CLI API_ edit command line..run"></a>
 
@@ -1102,6 +1123,11 @@ commands that are the natural thing to run afterwards.
     * [~featureSetEnabled(ctx, params, enabled)](#module_CLI API_ operations..featureSetEnabled) ⇒ <code>Promise.&lt;\*&gt;</code>
     * [~countElements(conformance)](#module_CLI API_ operations..countElements) ⇒ <code>string</code> \| <code>null</code>
     * [~matchFeature(spec, features)](#module_CLI API_ operations..matchFeature) ⇒ <code>\*</code>
+    * [~packageContents(ctx, packageId)](#module_CLI API_ operations..packageContents) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [~endpointUseOfPackage(ctx, packageId)](#module_CLI API_ operations..endpointUseOfPackage) ⇒ <code>Promise.&lt;Array&gt;</code>
+    * [~packageList(ctx, params)](#module_CLI API_ operations..packageList) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [~packageAdd(ctx, params)](#module_CLI API_ operations..packageAdd) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [~packageRemove(ctx, params)](#module_CLI API_ operations..packageRemove) ⇒ <code>Promise.&lt;\*&gt;</code>
     * [~configInfo(ctx)](#module_CLI API_ operations..configInfo) ⇒ <code>Promise.&lt;\*&gt;</code>
     * [~configCheck(ctx, params)](#module_CLI API_ operations..configCheck) ⇒ <code>Promise.&lt;\*&gt;</code>
     * [~unifySharedClusterStates(ctx)](#module_CLI API_ operations..unifySharedClusterStates) ⇒ <code>Promise.&lt;\*&gt;</code>
@@ -1876,6 +1902,78 @@ than numbers, so a bare number is read as a bit position.
 | --- | --- |
 | spec | <code>\*</code> | 
 | features | <code>Array</code> | 
+
+<a name="module_CLI API_ operations..packageContents"></a>
+
+### CLI API: operations~packageContents(ctx, packageId) ⇒ <code>Promise.&lt;\*&gt;</code>
+What a package contributes to the data model.
+
+**Kind**: inner method of [<code>CLI API: operations</code>](#module_CLI API_ operations)  
+**Returns**: <code>Promise.&lt;\*&gt;</code> - `{ clusters, deviceTypes }`  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+| packageId | <code>number</code> | 
+
+<a name="module_CLI API_ operations..endpointUseOfPackage"></a>
+
+### CLI API: operations~endpointUseOfPackage(ctx, packageId) ⇒ <code>Promise.&lt;Array&gt;</code>
+The endpoint configuration that would go with a package if it were removed.
+
+Disabling a custom XML package makes database triggers delete the endpoint
+clusters, attributes, commands and events that came from it, which is how
+the GUI behaves too. Counting first is what lets the CLI say so instead of
+doing it quietly.
+
+**Kind**: inner method of [<code>CLI API: operations</code>](#module_CLI API_ operations)  
+**Returns**: <code>Promise.&lt;Array&gt;</code> - `{ endpoint, cluster, side }` per enabled cluster  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+| packageId | <code>number</code> | 
+
+<a name="module_CLI API_ operations..packageList"></a>
+
+### CLI API: operations~packageList(ctx, params) ⇒ <code>Promise.&lt;\*&gt;</code>
+Lists the packages of a configuration, including the custom XML it names but
+does not have.
+
+**Kind**: inner method of [<code>CLI API: operations</code>](#module_CLI API_ operations)  
+**Returns**: <code>Promise.&lt;\*&gt;</code> - operation result  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+| params | <code>\*</code> | 
+
+<a name="module_CLI API_ operations..packageAdd"></a>
+
+### CLI API: operations~packageAdd(ctx, params) ⇒ <code>Promise.&lt;\*&gt;</code>
+Loads custom XML into the configuration, the way the Extensions page does.
+
+**Kind**: inner method of [<code>CLI API: operations</code>](#module_CLI API_ operations)  
+**Returns**: <code>Promise.&lt;\*&gt;</code> - operation result  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+| params | <code>\*</code> | 
+
+<a name="module_CLI API_ operations..packageRemove"></a>
+
+### CLI API: operations~packageRemove(ctx, params) ⇒ <code>Promise.&lt;\*&gt;</code>
+Takes custom XML back out of the configuration, the way the Delete button on
+the Extensions page does.
+
+**Kind**: inner method of [<code>CLI API: operations</code>](#module_CLI API_ operations)  
+**Returns**: <code>Promise.&lt;\*&gt;</code> - operation result  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+| params | <code>\*</code> | 
 
 <a name="module_CLI API_ operations..configInfo"></a>
 
@@ -2809,6 +2907,12 @@ operations, and writes the result back out.
 
 * [CLI API: session lifecycle](#module_CLI API_ session lifecycle)
     * [~open(argv, options)](#module_CLI API_ session lifecycle..open) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [~packages(ctx)](#module_CLI API_ session lifecycle..packages) ⇒ <code>Promise.&lt;Array&gt;</code>
+    * [~samePath(a, b)](#module_CLI API_ session lifecycle..samePath) ⇒ <code>boolean</code>
+    * [~declaredCustomXml(zapFile)](#module_CLI API_ session lifecycle..declaredCustomXml) ⇒ <code>Array</code>
+    * [~customXmlDifferences(ctx)](#module_CLI API_ session lifecycle..customXmlDifferences) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [~addCustomXml(ctx, filePath)](#module_CLI API_ session lifecycle..addCustomXml) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [~removeCustomXml(ctx, packageId)](#module_CLI API_ session lifecycle..removeCustomXml) ⇒ <code>Promise.&lt;boolean&gt;</code>
     * [~validate(ctx)](#module_CLI API_ session lifecycle..validate) ⇒ <code>Promise.&lt;\*&gt;</code>
     * [~describeNotifications(scope, rows)](#module_CLI API_ session lifecycle..describeNotifications) ⇒ <code>Array</code>
     * [~notifications(ctx)](#module_CLI API_ session lifecycle..notifications) ⇒ <code>Promise.&lt;Array&gt;</code>
@@ -2829,6 +2933,100 @@ when `zapFile` is null.
 | --- | --- | --- |
 | argv | <code>\*</code> | Parsed command line. |
 | options | <code>\*</code> | `logger` plus an optional `zapFile` override. |
+
+<a name="module_CLI API_ session lifecycle..packages"></a>
+
+### CLI API: session lifecycle~packages(ctx) ⇒ <code>Promise.&lt;Array&gt;</code>
+Every package the session is currently carrying.
+
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+**Returns**: <code>Promise.&lt;Array&gt;</code> - the `{ pkg, sessionPackage }` pairs  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+
+<a name="module_CLI API_ session lifecycle..samePath"></a>
+
+### CLI API: session lifecycle~samePath(a, b) ⇒ <code>boolean</code>
+Compares two file paths as the file system sees them, so that a package
+recorded relative to the working directory and the same file named relative
+to the .zap are recognized as one.
+
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+**Returns**: <code>boolean</code> - whether both name the same file  
+
+| Param | Type |
+| --- | --- |
+| a | <code>string</code> | 
+| b | <code>string</code> | 
+
+<a name="module_CLI API_ session lifecycle..declaredCustomXml"></a>
+
+### CLI API: session lifecycle~declaredCustomXml(zapFile) ⇒ <code>Array</code>
+The custom XML a .zap file names, as absolute paths.
+
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+**Returns**: <code>Array</code> - `{ declared, path }` per custom XML entry  
+
+| Param | Type |
+| --- | --- |
+| zapFile | <code>string</code> | 
+
+<a name="module_CLI API_ session lifecycle..customXmlDifferences"></a>
+
+### CLI API: session lifecycle~customXmlDifferences(ctx) ⇒ <code>Promise.&lt;\*&gt;</code>
+Where the custom XML of a session and the custom XML its file names differ.
+
+This has to be asked, because the importer answers a custom XML it cannot
+load by quietly moving on: with nothing else of that type in the database
+the package is dropped, and with something else of that type there it is
+handed over in its place, which is worse. Either way the configuration in
+hand is not the one the file describes, and saving writes that difference
+back into the file.
+
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+**Returns**: <code>Promise.&lt;\*&gt;</code> - `{ missing, unnamed }`  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+
+<a name="module_CLI API_ session lifecycle..addCustomXml"></a>
+
+### CLI API: session lifecycle~addCustomXml(ctx, filePath) ⇒ <code>Promise.&lt;\*&gt;</code>
+Loads a custom XML file into the session, which is what the Extensions page
+does when a file is chosen there.
+
+The load is the same call the REST layer makes, so the package is parsed,
+post-processed and attached to a session partition exactly as it would be
+for the GUI, and it is written into the .zap file when the session is saved.
+
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+**Returns**: <code>Promise.&lt;\*&gt;</code> - `{ succeeded, packageId, err }`  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+| filePath | <code>string</code> | 
+
+<a name="module_CLI API_ session lifecycle..removeCustomXml"></a>
+
+### CLI API: session lifecycle~removeCustomXml(ctx, packageId) ⇒ <code>Promise.&lt;boolean&gt;</code>
+Detaches a package from the session, which is what the Delete button on the
+Extensions page does.
+
+The row is disabled rather than deleted, and database triggers then drop the
+endpoint configuration that referred to the clusters it defined, so this is
+the same demolition the GUI performs.
+
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+**Returns**: <code>Promise.&lt;boolean&gt;</code> - whether a session package was detached  
+
+| Param | Type |
+| --- | --- |
+| ctx | <code>\*</code> | 
+| packageId | <code>number</code> | 
 
 <a name="module_CLI API_ session lifecycle..validate"></a>
 

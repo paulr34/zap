@@ -601,3 +601,64 @@ Note that saving normalizes a configuration the same way `zap convert` does:
 elements that are not selected are not written out, and mandatory elements the
 loaded ZCL metadata requires are added. This is existing ZAP behaviour and
 applies to any tool that loads and saves a `.zap` file.
+
+## Custom XML
+
+A configuration can define clusters of its own in a ZCL XML file. In the GUI
+that file is chosen on the Extensions page; here it is a package operation:
+
+```bash
+zap edit package add light.zap --xml my-clusters.xml
+```
+
+Loading it says what came in, because a file that defines nothing usable
+otherwise looks exactly like one that worked:
+
+```
+Loaded custom XML my-clusters.xml: 1 cluster(s), 0 device type(s)
+  cluster Sample Custom Cluster (0xFFF1FC20)
+```
+
+From then on its clusters behave like any other: they can be enabled on an
+endpoint and their attributes, commands and events configured by name. The
+package is written into the `.zap` file when the session is saved, so the next
+run and the GUI both find it.
+
+`zap edit package list` shows every package the configuration carries, and
+`zap edit package remove --xml <file>` takes one back out. Removing is the one
+that needs care: as in the GUI, the endpoint configuration that came from those
+clusters goes with it, so the CLI counts what would be lost and refuses until
+`--force` is passed.
+
+```
+⛔ my-clusters.xml defines 1 cluster(s) that this configuration uses
+Removing it deletes their endpoint configuration, as it does in the GUI:
+  endpoint 1: Sample Custom Cluster (0xFFF1FC20) server
+  zap edit package remove light.zap --xml my-clusters.xml --force
+```
+
+### When the XML is not there
+
+A `.zap` file records where its custom XML was, so a file that travels without
+it — a fresh clone, a build agent, a moved directory — names an XML that cannot
+be read. ZAP answers that by moving on: the package is dropped, or, when the
+database happens to hold another custom XML, that one is used in its place. The
+configuration is then built on a data model the file does not describe, and
+saving writes the difference back.
+
+So editing such a configuration is refused, and reading it is not:
+
+```
+⛔ light.zap names 1 custom XML package(s) this session does not have
+  my-clusters.xml (no such file)
+  /elsewhere/other.xml was loaded instead, though the file never names it
+Saving would write that difference back into the file. Point it at the file:
+  zap edit package add light.zap --xml <file.xml>
+or drop the reference:
+  zap edit package remove light.zap --xml my-clusters.xml
+or pass --force to edit it as it loaded.
+```
+
+`zap edit info` and `zap edit package list` still work and say the same thing,
+the listing marking each package `loaded`, `missing`, or `loaded, not named by
+the file`.

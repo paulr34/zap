@@ -158,6 +158,45 @@ function siblingCopy(source, name) {
   return target
 }
 
+/**
+ * Runs something against a database that has never seen anything, which is
+ * what a colleague's machine or a build agent is. The edit database is
+ * long-lived and shared by every test in this file, and a package it already
+ * holds is found by path even when the file behind it is gone, so a first
+ * encounter cannot be staged in it.
+ *
+ * @param {Function} body
+ * @returns {Promise} whatever the body returns
+ */
+async function onAFreshMachine(body) {
+  let previous = env.appDirectory()
+  let temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'zap-cli-edit-state-'))
+  env.setAppDirectory(temporary)
+  try {
+    return await body()
+  } finally {
+    env.setAppDirectory(previous)
+    fs.rmSync(temporary, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Adds a custom XML entry to a .zap file's package list without loading it,
+ * which is the state a file arrives in when the XML it names is not there.
+ *
+ * @param {string} file
+ * @param {string} xmlName Path as it should appear, relative to the .zap.
+ */
+function declareCustomXml(file, xmlName) {
+  let json = JSON.parse(fs.readFileSync(file, 'utf8'))
+  json.package.push({
+    pathRelativity: 'relativeToZap',
+    path: xmlName,
+    type: 'zcl-xml-standalone'
+  })
+  fs.writeFileSync(file, JSON.stringify(json, null, 2))
+}
+
 test('cli edit: parses a nested subcommand into an operation', () => {
   let argv = cliCommands.parseEditCommandLine([
     '/usr/bin/node',
@@ -3281,6 +3320,366 @@ test(
     let all = JSON.parse(withPackages.output).operations[0].rows
     expect(all.length).toBeGreaterThan(report.rows.length)
     expect(all.some((r) => r.source === 'data model')).toBe(true)
+  },
+  testUtil.timeout.long()
+)
+
+test(
+  'cli edit: adds custom xml and configures the clusters it brings',
+  async () => {
+    // The Extensions page loads a ZCL XML file into the session, and its
+    // clusters then behave like any other. This is that, headless: the file
+    // starts without the package, gains it, and the custom cluster becomes
+    // usable and survives the save.
+    let file = siblingCopy(
+      testUtil.matterTestFile.matterTest,
+      'cli-edit-package-add.zap'
+    )
+    let matter = { ...matterPackages, zapFile: file }
+    let xml = path.resolve(testUtil.testMatterCustomXml)
+
+    let created = await edit({
+      ...matter,
+      editOperation: 'endpoint.create',
+      endpoint: 31,
+      deviceType: ['MA-onofflight']
+    })
+    expect(created.code).toBe(0)
+
+    // Before the XML is loaded the cluster does not exist, and saying so with
+    // the near misses is the whole point of the lookup.
+    let missing = await edit({
+      ...matter,
+      editOperation: 'cluster.enable',
+      endpoint: 31,
+      cluster: 'Sample Custom Cluster',
+      side: 'server'
+    })
+    expect(missing.code).toBe(1)
+    expect(missing.errors).toContain('Unknown cluster')
+
+    let added = await edit({
+      ...matter,
+      editOperation: 'package.add',
+      xml: [xml]
+    })
+    expect(added.code).toBe(0)
+    expect(added.output).toContain('Loaded custom XML')
+    expect(added.output).toContain('Sample Custom Cluster')
+
+    // It went into the file, which is what makes the next command work.
+    let packages = JSON.parse(fs.readFileSync(file, 'utf8')).package
+    expect(packages.some((p) => p.type === 'zcl-xml-standalone')).toBe(true)
+
+    let enabled = await edit({
+      ...matter,
+      editOperation: 'cluster.enable',
+      endpoint: 31,
+      cluster: 'Sample Custom Cluster',
+      side: 'server'
+    })
+    expect(enabled.code).toBe(0)
+
+    let set = await edit({
+      ...matter,
+      editOperation: 'attribute.set',
+      endpoint: 31,
+      cluster: 'Sample Custom Cluster',
+      attribute: 'FlipFlop',
+      enabled: true,
+      default: '1'
+    })
+    expect(set.code).toBe(0)
+
+    let listed = await edit({
+      ...matter,
+      editOperation: 'attribute.list',
+      endpoint: 31,
+      cluster: 'Sample Custom Cluster',
+      enabledOnly: true,
+      format: 'json'
+    })
+    expect(listed.code).toBe(0)
+    let flipFlop = JSON.parse(listed.output).operations[0].rows.find(
+      (r) => r.name === 'FlipFlop'
+    )
+    expect(flipFlop.enabled).toBe('yes')
+    expect(flipFlop.default).toBe('1')
+
+    // The listing names the custom XML alongside the built-in packages.
+    let inventory = await edit({
+      ...matter,
+      editOperation: 'package.list',
+      format: 'json'
+    })
+    expect(inventory.code).toBe(0)
+    let rows = JSON.parse(inventory.output).operations[0].rows
+    let custom = rows.find((r) => r.type === 'zcl-xml-standalone')
+    expect(custom.status).toBe('loaded')
+    expect(custom.path).toContain('matter-custom.xml')
+
+    // Only an XML file will do, and saying which file is wrong beats a parse
+    // error from further in.
+    let wrongKind = await edit({
+      ...matter,
+      editOperation: 'package.add',
+      xml: [matterPackages.zclProperties[0]]
+    })
+    expect(wrongKind.code).toBe(1)
+    expect(wrongKind.errors).toContain('not an XML file')
+
+    let absent = await edit({
+      ...matter,
+      editOperation: 'package.add',
+      xml: [path.join(workDir, 'no-such-file.xml')]
+    })
+    expect(absent.code).toBe(1)
+    expect(absent.errors).toContain('No such file')
+  },
+  testUtil.timeout.long()
+)
+
+test(
+  'cli edit: removing custom xml takes the endpoint configuration with it',
+  async () => {
+    // Disabling a custom XML package makes database triggers delete the
+    // endpoint clusters that came from it. The GUI does that on a button press
+    // with nothing said; here it is counted first and refused until asked for
+    // twice, because it is not recoverable from the file afterwards.
+    let file = siblingCopy(
+      testUtil.matterTestFile.matterTest,
+      'cli-edit-package-remove.zap'
+    )
+    let matter = { ...matterPackages, zapFile: file }
+    let xml = path.resolve(testUtil.testMatterCustomXml)
+
+    await edit({
+      ...matter,
+      editOperation: 'endpoint.create',
+      endpoint: 41,
+      deviceType: ['MA-onofflight']
+    })
+    await edit({ ...matter, editOperation: 'package.add', xml: [xml] })
+    let enabled = await edit({
+      ...matter,
+      editOperation: 'cluster.enable',
+      endpoint: 41,
+      cluster: 'Sample Custom Cluster',
+      side: 'server'
+    })
+    expect(enabled.code).toBe(0)
+
+    let refused = await edit({
+      ...matter,
+      editOperation: 'package.remove',
+      xml: 'matter-custom.xml'
+    })
+    expect(refused.code).toBe(1)
+    expect(refused.errors).toContain('endpoint 41')
+    expect(refused.errors).toContain('--force')
+
+    // And the refusal changed nothing.
+    let still = await edit({
+      ...matter,
+      editOperation: 'cluster.list',
+      endpoint: 41,
+      enabledOnly: true,
+      format: 'json'
+    })
+    expect(
+      JSON.parse(still.output).operations[0].rows.some(
+        (r) => r.name === 'Sample Custom Cluster'
+      )
+    ).toBe(true)
+
+    let removed = await edit({
+      ...matter,
+      editOperation: 'package.remove',
+      xml: 'matter-custom.xml',
+      force: true
+    })
+    expect(removed.code).toBe(0)
+    expect(removed.output).toContain('Removed custom XML')
+    expect(removed.output).toContain('endpoint 41')
+
+    let after = JSON.parse(fs.readFileSync(file, 'utf8'))
+    expect(after.package.some((p) => p.type === 'zcl-xml-standalone')).toBe(
+      false
+    )
+    let clusters = after.endpointTypes
+      .flatMap((e) => e.clusters || [])
+      .filter((c) => c.name === 'Sample Custom Cluster')
+    expect(clusters).toEqual([])
+
+    // An unknown name is a lookup failure like any other.
+    let unknown = await edit({
+      ...matter,
+      editOperation: 'package.remove',
+      xml: 'not-a-package.xml'
+    })
+    expect(unknown.code).toBe(1)
+    expect(unknown.errors).toContain('Unknown custom XML package')
+  },
+  testUtil.timeout.long()
+)
+
+test(
+  'cli edit: refuses to edit a configuration whose custom xml it does not have',
+  async () => {
+    // The importer answers a custom XML it cannot load by moving on, and says
+    // nothing: the package is dropped from the configuration, so a save writes
+    // the file back without it. The session is then built on a different data
+    // model than the file describes, which is why editing is refused. Reading
+    // is not, since that is how anyone finds out.
+    let file = siblingCopy(
+      testUtil.matterTestFile.matterTest,
+      'cli-edit-package-missing.zap'
+    )
+    declareCustomXml(file, 'cli-edit-nowhere.xml')
+    let matter = { ...matterPackages, zapFile: file }
+
+    await onAFreshMachine(async () => {
+      let blocked = await edit({
+        ...matter,
+        editOperation: 'cluster.enable',
+        endpoint: 1,
+        cluster: 'Identify',
+        side: 'server'
+      })
+      expect(blocked.code).toBe(1)
+      expect(blocked.errors).toContain(
+        'custom XML package(s) this session does not have'
+      )
+      expect(blocked.errors).toContain('no such file')
+      expect(blocked.errors).toContain('zap edit package remove')
+
+      // Reading works, and says what is wrong rather than pretending.
+      let info = await edit({ ...matter, editOperation: 'config.info' })
+      expect(info.code).toBe(0)
+      expect(info.output).toContain('custom XML not loaded')
+
+      let listed = await edit({
+        ...matter,
+        editOperation: 'package.list',
+        format: 'json'
+      })
+      expect(listed.code).toBe(0)
+      expect(
+        JSON.parse(listed.output).operations[0].rows.some(
+          (r) => r.status === 'missing'
+        )
+      ).toBe(true)
+
+      // --force is the way through for someone who means it.
+      let forced = await edit({
+        ...matter,
+        editOperation: 'cluster.enable',
+        endpoint: 1,
+        cluster: 'Identify',
+        side: 'server',
+        force: true
+      })
+      expect(forced.code).toBe(0)
+      expect(forced.output).toContain('Enabled cluster Identify')
+    })
+
+    // Forcing it through wrote the file without the package it could not load,
+    // so there is nothing left to complain about.
+    expect(
+      JSON.parse(fs.readFileSync(file, 'utf8')).package.some(
+        (p) => p.type === 'zcl-xml-standalone'
+      )
+    ).toBe(false)
+  },
+  testUtil.timeout.long()
+)
+
+test(
+  'cli edit: will not edit against a custom xml quietly put in place of another',
+  async () => {
+    // The worse half of the same problem. When the database holds a custom XML
+    // of its own, the importer hands that one over instead of the one the file
+    // names, and the configuration is then edited against clusters it never
+    // asked for. The substitution is named, because nothing else would reveal
+    // it.
+    let file = siblingCopy(
+      testUtil.matterTestFile.matterTest,
+      'cli-edit-package-substituted.zap'
+    )
+    declareCustomXml(file, 'cli-edit-nowhere.xml')
+    let matter = { ...matterPackages, zapFile: file }
+
+    let other = siblingCopy(
+      testUtil.matterTestFile.matterTest,
+      'cli-edit-package-other.zap'
+    )
+
+    await onAFreshMachine(async () => {
+      // Something else of the same type, which is all it takes.
+      let primed = await edit({
+        ...matterPackages,
+        zapFile: other,
+        editOperation: 'package.add',
+        xml: [path.resolve(testUtil.testMatterCustomXml)]
+      })
+      expect(primed.code).toBe(0)
+
+      let blocked = await edit({
+        ...matter,
+        editOperation: 'cluster.enable',
+        endpoint: 1,
+        cluster: 'Identify',
+        side: 'server'
+      })
+      expect(blocked.code).toBe(1)
+      expect(blocked.errors).toContain('loaded instead')
+      expect(blocked.errors).toContain('matter-custom.xml')
+
+      // The listing tells the two apart: one named and absent, one present and
+      // unnamed.
+      let listed = await edit({
+        ...matter,
+        editOperation: 'package.list',
+        format: 'json'
+      })
+      let rows = JSON.parse(listed.output).operations[0].rows
+      expect(rows.some((r) => r.status === 'missing')).toBe(true)
+      expect(
+        rows.some((r) => r.status === 'loaded, not named by the file')
+      ).toBe(true)
+
+      // Repairing means both: drop the reference that goes nowhere, and the
+      // package that arrived uninvited.
+      let dropped = await edit({
+        ...matter,
+        editOperation: 'package.remove',
+        xml: 'cli-edit-nowhere.xml'
+      })
+      expect(dropped.code).toBe(0)
+      expect(dropped.output).toContain('never loaded')
+
+      let uninvited = await edit({
+        ...matter,
+        editOperation: 'package.remove',
+        xml: 'matter-custom.xml'
+      })
+      expect(uninvited.code).toBe(0)
+
+      let allowed = await edit({
+        ...matter,
+        editOperation: 'cluster.enable',
+        endpoint: 1,
+        cluster: 'Identify',
+        side: 'server'
+      })
+      expect(allowed.code).toBe(0)
+    })
+
+    expect(
+      JSON.parse(fs.readFileSync(file, 'utf8')).package.some(
+        (p) => p.type === 'zcl-xml-standalone'
+      )
+    ).toBe(false)
   },
   testUtil.timeout.long()
 )
