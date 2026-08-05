@@ -324,20 +324,48 @@ async function clustersForEndpoint(ctx, endpoint) {
  * The ZCL package ids relevant to a single endpoint. Falls back to every
  * session package when the endpoint has no resolvable device type.
  *
+ * Custom XML device types live in a standalone package but reference clusters
+ * defined by the primary zcl-properties package. When an endpoint's device
+ * types come only from standalone XML, the primary packages stay in scope so
+ * cluster enable/list/set can resolve those base clusters. `--category` still
+ * narrows the primary set in multiprotocol configurations.
+ *
  * @param {*} ctx
  * @param {*} endpoint
  * @returns {Promise<number[]>} package ids
  */
 async function packageIdsForEndpoint(ctx, endpoint) {
-  let refs = new Set(await packageRefsOfEndpoint(ctx, endpoint))
-  let sessionPkgs = await zclPackages(ctx)
+  let deviceRefs = await packageRefsOfEndpoint(ctx, endpoint)
+  let sessionPkgs = await zclPackages(ctx) // respects --category
+  let allSession = await allZclPackages(ctx)
+  let byId = new Map(allSession.map((p) => [p.id, p]))
+  let sessionIds = new Set(sessionPkgs.map((p) => p.id))
+  let refs = new Set()
+
+  // Keep device-type packages that are in the active category scope. A name
+  // like HA-tstat exists in both Matter and Zigbee catalogs; --category is
+  // what picks which package's clusters to search.
+  for (let id of deviceRefs) {
+    if (sessionIds.has(id)) refs.add(id)
+  }
+
   // Custom XML always stays in scope: it extends whatever else is loaded.
   sessionPkgs
     .filter((p) => p.type === dbEnum.packageType.zclXmlStandalone)
     .forEach((p) => refs.add(p.id))
+
+  let hasPrimary = [...refs].some((id) => {
+    let p = byId.get(id)
+    return p != null && p.type === dbEnum.packageType.zclProperties
+  })
+  if (!hasPrimary) {
+    sessionPkgs
+      .filter((p) => p.type === dbEnum.packageType.zclProperties)
+      .forEach((p) => refs.add(p.id))
+  }
+
   if (refs.size === 0) return sessionPkgs.map((p) => p.id)
-  let sessionIds = new Set(sessionPkgs.map((p) => p.id))
-  return [...refs].filter((r) => sessionIds.has(r))
+  return [...refs]
 }
 
 /**
@@ -365,6 +393,9 @@ async function packageRefsOfEndpoint(ctx, endpoint) {
  * its device types. In a multiprotocol configuration this is what tells the
  * Zigbee endpoint 1 apart from the Matter endpoint 1.
  *
+ * Custom-XML-only device types have no package category of their own; the
+ * endpoint profile id is used as a fallback so `--category` still works.
+ *
  * @param {*} ctx
  * @param {*} endpoint
  * @returns {Promise<string[]>} category names
@@ -372,7 +403,7 @@ async function packageRefsOfEndpoint(ctx, endpoint) {
 async function endpointCategories(ctx, endpoint) {
   let refs = await packageRefsOfEndpoint(ctx, endpoint)
   let byId = new Map((await allZclPackages(ctx)).map((p) => [p.id, p]))
-  return [
+  let categories = [
     ...new Set(
       refs
         .map((r) => byId.get(r))
@@ -380,6 +411,19 @@ async function endpointCategories(ctx, endpoint) {
         .map((p) => p.category)
     )
   ]
+  if (categories.length > 0) return categories
+
+  // selectAllEndpoints can already carry the package category.
+  if (endpoint.category != null && endpoint.category !== '') {
+    return [endpoint.category]
+  }
+
+  // Matter = 0x0103, Zigbee HA = 0x0104. Used when device types come solely
+  // from uncategorized custom XML (or their packages failed to resolve).
+  let profile = Number(endpoint.profileId)
+  if (profile === 0x0103) return ['matter']
+  if (profile === 0x0104) return ['zigbee']
+  return categories
 }
 
 /**

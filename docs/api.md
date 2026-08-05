@@ -2687,6 +2687,12 @@ defined by the same packages as the endpoint's device types.
 The ZCL package ids relevant to a single endpoint. Falls back to every
 session package when the endpoint has no resolvable device type.
 
+Custom XML device types live in a standalone package but reference clusters
+defined by the primary zcl-properties package. When an endpoint's device
+types come only from standalone XML, the primary packages stay in scope so
+cluster enable/list/set can resolve those base clusters. `--category` still
+narrows the primary set in multiprotocol configurations.
+
 **Kind**: inner method of [<code>CLI API: entity resolution</code>](#module_CLI API_ entity resolution)  
 **Returns**: <code>Promise.&lt;Array.&lt;number&gt;&gt;</code> - package ids  
 
@@ -2714,6 +2720,9 @@ The ZCL packages an endpoint's device types are defined by.
 The categories an endpoint belongs to, taken from the packages that define
 its device types. In a multiprotocol configuration this is what tells the
 Zigbee endpoint 1 apart from the Matter endpoint 1.
+
+Custom-XML-only device types have no package category of their own; the
+endpoint profile id is used as a fallback so `--category` still works.
 
 **Kind**: inner method of [<code>CLI API: entity resolution</code>](#module_CLI API_ entity resolution)  
 **Returns**: <code>Promise.&lt;Array.&lt;string&gt;&gt;</code> - category names  
