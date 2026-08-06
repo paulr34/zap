@@ -65,6 +65,58 @@ function expandCommaSeparatedZapPaths(tokens) {
 }
 
 /**
+ * Turns bundled data model names into the metafile paths they stand for, so
+ * `--zcl matter` works the same from a packaged binary as from a source tree.
+ * Anything that is not a known name is left alone and treated as a file path.
+ *
+ * @param {*} value One `--zcl` value, or an array of them.
+ * @returns {*} the value with names replaced by paths
+ */
+function resolveZclMetafileNames(value) {
+  if (Array.isArray(value)) {
+    return value.map((v) => resolveZclMetafileNames(v))
+  }
+  if (typeof value !== 'string') return value
+  // A real path wins over a name, so a local file called 'matter' still loads.
+  if (fs.existsSync(value)) return value
+  let resolved = env.builtinZclMetafileByName(value)
+  return resolved == null ? value : resolved
+}
+
+/**
+ * Turns bundled generation-template names into the metafile paths they stand
+ * for, so `--gen matter` works the same from a packaged binary as from a
+ * source tree. Anything that is not a known name is left alone.
+ *
+ * @param {*} value One `--gen` value, or an array of them.
+ * @returns {*} the value with names replaced by paths
+ */
+function resolveGenTemplateMetafileNames(value) {
+  if (Array.isArray(value)) {
+    return value.map((v) => resolveGenTemplateMetafileNames(v))
+  }
+  if (typeof value !== 'string') return value
+  if (fs.existsSync(value)) return value
+  let resolved = env.builtinGenTemplateMetafileByName(value)
+  return resolved == null ? value : resolved
+}
+
+/**
+ * True when the caller did not set a generation template, so the CLI should
+ * pick the test template that goes with the ZCL data model.
+ *
+ * @param {*} value
+ * @returns {boolean}
+ */
+function generationTemplateUnset(value) {
+  if (value == null) return true
+  if (Array.isArray(value)) {
+    return value.length === 0 || value.every((v) => v == null || v === '')
+  }
+  return value === ''
+}
+
+/**
  * Applies the settings that every command needs regardless of how it was
  * parsed: the Jenkins adjustments, the save file format, the emoji preference
  * and the state directory.
@@ -73,6 +125,21 @@ function expandCommaSeparatedZapPaths(tokens) {
  * @returns {*} the same parsed arguments
  */
 function applyEnvironmentSettings(ret) {
+  if (ret.zclProperties != null) {
+    ret.zclProperties = resolveZclMetafileNames(ret.zclProperties)
+  }
+
+  // When --gen is omitted, load the test templates that match the ZCL data
+  // model so a packaged binary has something to generate / attach without the
+  // caller knowing where the bundle mounts those files.
+  if (generationTemplateUnset(ret.generationTemplate)) {
+    ret.generationTemplate = env.defaultGenTemplatesForZcl(ret.zclProperties)
+  } else {
+    ret.generationTemplate = resolveGenTemplateMetafileNames(
+      ret.generationTemplate
+    )
+  }
+
   if (ret.jenkins) {
     console.log(
       env.formatEmojiMessage(
@@ -183,7 +250,9 @@ export function processCommandLineArguments(argv) {
       default: null
     })
     .option('zclProperties', {
-      desc: 'zcl.properties file to read in.',
+      desc: `zcl.properties file to read in. Also accepts a bundled data model name: ${env
+        .builtinZclMetafileNameList()
+        .join(', ')}.`,
       alias: ['zcl', 'z'],
       type: 'array',
       default: env.builtinSilabsZclMetafile()
@@ -194,7 +263,11 @@ export function processCommandLineArguments(argv) {
       default: null
     })
     .option('generationTemplate', {
-      desc: 'generation template metafile (gen-template.json) to read in.',
+      desc: `generation template metafile (gen-templates.json) to read in. Also accepts a bundled name: ${env
+        .builtinGenTemplateMetafileNameList()
+        .join(
+          ', '
+        )}. When omitted, the test templates matching --zcl are used.`,
       alias: ['gen', 'g'],
       type: 'array',
       default: env.builtinTemplateMetafile()

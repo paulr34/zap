@@ -610,13 +610,17 @@ const topLevel = {
  */
 const globalOptions = {
   zclProperties: {
-    desc: 'zcl.properties or zcl.json metafile to read in.',
+    desc: `zcl.properties or zcl.json metafile to read in. Also accepts a bundled data model name: ${env
+      .builtinZclMetafileNameList()
+      .join(', ')}.`,
     alias: ['zcl', 'z'],
     type: 'array',
     default: () => env.builtinSilabsZclMetafile()
   },
   generationTemplate: {
-    desc: 'generation template metafile (gen-templates.json) to read in.',
+    desc: `generation template metafile (gen-templates.json) to read in. Also accepts a bundled name: ${env
+      .builtinGenTemplateMetafileNameList()
+      .join(', ')}. When omitted, the test templates matching --zcl are used.`,
     alias: ['gen', 'g'],
     type: 'array',
     default: () => env.builtinTemplateMetafile()

@@ -21594,6 +21594,9 @@ Arguments for ZAP
     * _inner_
         * [~environmentVariablesDescription()](#module_JS API_ Arguments for ZAP..environmentVariablesDescription) ⇒
         * [~expandCommaSeparatedZapPaths(tokens)](#module_JS API_ Arguments for ZAP..expandCommaSeparatedZapPaths) ⇒ <code>Array.&lt;string&gt;</code>
+        * [~resolveZclMetafileNames(value)](#module_JS API_ Arguments for ZAP..resolveZclMetafileNames) ⇒ <code>\*</code>
+        * [~resolveGenTemplateMetafileNames(value)](#module_JS API_ Arguments for ZAP..resolveGenTemplateMetafileNames) ⇒ <code>\*</code>
+        * [~generationTemplateUnset(value)](#module_JS API_ Arguments for ZAP..generationTemplateUnset) ⇒ <code>boolean</code>
         * [~applyEnvironmentSettings(ret)](#module_JS API_ Arguments for ZAP..applyEnvironmentSettings) ⇒ <code>\*</code>
 
 <a name="module_JS API_ Arguments for ZAP.processCommandLineArguments"></a>
@@ -21628,6 +21631,46 @@ space-separated paths as separate argv tokens; this lets you use a single
 | Param | Type |
 | --- | --- |
 | tokens | <code>Array.&lt;string&gt;</code> | 
+
+<a name="module_JS API_ Arguments for ZAP..resolveZclMetafileNames"></a>
+
+### JS API: Arguments for ZAP~resolveZclMetafileNames(value) ⇒ <code>\*</code>
+Turns bundled data model names into the metafile paths they stand for, so
+`--zcl matter` works the same from a packaged binary as from a source tree.
+Anything that is not a known name is left alone and treated as a file path.
+
+**Kind**: inner method of [<code>JS API: Arguments for ZAP</code>](#module_JS API_ Arguments for ZAP)  
+**Returns**: <code>\*</code> - the value with names replaced by paths  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| value | <code>\*</code> | One `--zcl` value, or an array of them. |
+
+<a name="module_JS API_ Arguments for ZAP..resolveGenTemplateMetafileNames"></a>
+
+### JS API: Arguments for ZAP~resolveGenTemplateMetafileNames(value) ⇒ <code>\*</code>
+Turns bundled generation-template names into the metafile paths they stand
+for, so `--gen matter` works the same from a packaged binary as from a
+source tree. Anything that is not a known name is left alone.
+
+**Kind**: inner method of [<code>JS API: Arguments for ZAP</code>](#module_JS API_ Arguments for ZAP)  
+**Returns**: <code>\*</code> - the value with names replaced by paths  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| value | <code>\*</code> | One `--gen` value, or an array of them. |
+
+<a name="module_JS API_ Arguments for ZAP..generationTemplateUnset"></a>
+
+### JS API: Arguments for ZAP~generationTemplateUnset(value) ⇒ <code>boolean</code>
+True when the caller did not set a generation template, so the CLI should
+pick the test template that goes with the ZCL data model.
+
+**Kind**: inner method of [<code>JS API: Arguments for ZAP</code>](#module_JS API_ Arguments for ZAP)  
+
+| Param | Type |
+| --- | --- |
+| value | <code>\*</code> | 
 
 <a name="module_JS API_ Arguments for ZAP..applyEnvironmentSettings"></a>
 
@@ -21857,6 +21900,8 @@ Environment utilities for ZAP
 
 
 * [JS API: Environment utilities](#module_JS API_ Environment utilities)
+    * [~builtinZclMetafileNames](#module_JS API_ Environment utilities..builtinZclMetafileNames)
+    * [~builtinGenTemplateMetafileNames](#module_JS API_ Environment utilities..builtinGenTemplateMetafileNames)
     * [~setSaveFileFormat(n)](#module_JS API_ Environment utilities..setSaveFileFormat)
     * [~defaultFileFormat()](#module_JS API_ Environment utilities..defaultFileFormat) ⇒
     * [~builtinSilabsZclMetafile()](#module_JS API_ Environment utilities..builtinSilabsZclMetafile) ⇒
@@ -21870,6 +21915,11 @@ Environment utilities for ZAP
     * [~builtinDotdotZclMetafile()](#module_JS API_ Environment utilities..builtinDotdotZclMetafile) ⇒
     * [~builtinMatterZclMetafile2()](#module_JS API_ Environment utilities..builtinMatterZclMetafile2) ⇒
     * [~builtinTemplateMetafile()](#module_JS API_ Environment utilities..builtinTemplateMetafile) ⇒
+    * [~builtinZclMetafileByName(name)](#module_JS API_ Environment utilities..builtinZclMetafileByName) ⇒ <code>string</code> \| <code>null</code>
+    * [~builtinGenTemplateMetafileByName(name)](#module_JS API_ Environment utilities..builtinGenTemplateMetafileByName) ⇒ <code>string</code> \| <code>null</code>
+    * [~builtinZclMetafileNameList()](#module_JS API_ Environment utilities..builtinZclMetafileNameList) ⇒ <code>Array.&lt;string&gt;</code>
+    * [~builtinGenTemplateMetafileNameList()](#module_JS API_ Environment utilities..builtinGenTemplateMetafileNameList) ⇒ <code>Array.&lt;string&gt;</code>
+    * [~defaultGenTemplatesForZcl(zclProperties)](#module_JS API_ Environment utilities..defaultGenTemplatesForZcl) ⇒ <code>Array.&lt;string&gt;</code>
     * [~setDevelopmentEnv()](#module_JS API_ Environment utilities..setDevelopmentEnv)
     * [~setProductionEnv()](#module_JS API_ Environment utilities..setProductionEnv)
     * [~logInitStdout()](#module_JS API_ Environment utilities..logInitStdout)
@@ -21900,6 +21950,23 @@ Environment utilities for ZAP
     * [~httpStaticContent()](#module_JS API_ Environment utilities..httpStaticContent) ⇒
     * [~formatEmojiMessage(emoji, message)](#module_JS API_ Environment utilities..formatEmojiMessage) ⇒ <code>string</code>
 
+<a name="module_JS API_ Environment utilities..builtinZclMetafileNames"></a>
+
+### JS API: Environment utilities~builtinZclMetafileNames
+Short names for the data models that ship inside the binary.
+
+A packaged zap-cli carries zcl-builtin/ inside its own snapshot, at a path
+nobody can reasonably type. These names are how a command line asks for a
+bundled data model without knowing where it lives.
+
+**Kind**: inner constant of [<code>JS API: Environment utilities</code>](#module_JS API_ Environment utilities)  
+<a name="module_JS API_ Environment utilities..builtinGenTemplateMetafileNames"></a>
+
+### JS API: Environment utilities~builtinGenTemplateMetafileNames
+Short names for the generation templates that ship with this build for
+testing and for the packaged CLI. Same idea as the ZCL short names.
+
+**Kind**: inner constant of [<code>JS API: Environment utilities</code>](#module_JS API_ Environment utilities)  
 <a name="module_JS API_ Environment utilities..setSaveFileFormat"></a>
 
 ### JS API: Environment utilities~setSaveFileFormat(n)
@@ -21983,10 +22050,67 @@ Get builtin Matter ZCL json file
 <a name="module_JS API_ Environment utilities..builtinTemplateMetafile"></a>
 
 ### JS API: Environment utilities~builtinTemplateMetafile() ⇒
-No builtin meta template file.
+No builtin meta template file for callers that still expect "no templates".
+The CLI fills a test template in when `--gen` is left unset; see
+`defaultGenTemplatesForZcl`.
 
 **Kind**: inner method of [<code>JS API: Environment utilities</code>](#module_JS API_ Environment utilities)  
 **Returns**: null  
+<a name="module_JS API_ Environment utilities..builtinZclMetafileByName"></a>
+
+### JS API: Environment utilities~builtinZclMetafileByName(name) ⇒ <code>string</code> \| <code>null</code>
+Resolves a bundled data model short name such as 'matter' or 'zigbee' to the
+metafile that ships with this build. Returns null for anything that is not a
+known name, which is how callers tell a name from a file path.
+
+**Kind**: inner method of [<code>JS API: Environment utilities</code>](#module_JS API_ Environment utilities)  
+**Returns**: <code>string</code> \| <code>null</code> - path to the bundled metafile, or null  
+
+| Param | Type |
+| --- | --- |
+| name | <code>\*</code> | 
+
+<a name="module_JS API_ Environment utilities..builtinGenTemplateMetafileByName"></a>
+
+### JS API: Environment utilities~builtinGenTemplateMetafileByName(name) ⇒ <code>string</code> \| <code>null</code>
+Resolves a bundled generation-template short name such as 'matter' or
+'zigbee' to the test template metafile that ships with this build.
+
+**Kind**: inner method of [<code>JS API: Environment utilities</code>](#module_JS API_ Environment utilities)  
+**Returns**: <code>string</code> \| <code>null</code> - path to the bundled metafile, or null  
+
+| Param | Type |
+| --- | --- |
+| name | <code>\*</code> | 
+
+<a name="module_JS API_ Environment utilities..builtinZclMetafileNameList"></a>
+
+### JS API: Environment utilities~builtinZclMetafileNameList() ⇒ <code>Array.&lt;string&gt;</code>
+The bundled data model short names, for help text and error messages.
+
+**Kind**: inner method of [<code>JS API: Environment utilities</code>](#module_JS API_ Environment utilities)  
+**Returns**: <code>Array.&lt;string&gt;</code> - sorted unique names  
+<a name="module_JS API_ Environment utilities..builtinGenTemplateMetafileNameList"></a>
+
+### JS API: Environment utilities~builtinGenTemplateMetafileNameList() ⇒ <code>Array.&lt;string&gt;</code>
+The bundled generation-template short names, for help text and error messages.
+
+**Kind**: inner method of [<code>JS API: Environment utilities</code>](#module_JS API_ Environment utilities)  
+**Returns**: <code>Array.&lt;string&gt;</code> - sorted unique names  
+<a name="module_JS API_ Environment utilities..defaultGenTemplatesForZcl"></a>
+
+### JS API: Environment utilities~defaultGenTemplatesForZcl(zclProperties) ⇒ <code>Array.&lt;string&gt;</code>
+Picks the test generation template(s) that go with the given ZCL metafile(s)
+when the caller did not set `--gen`. Matter ZCL gets the Matter test
+templates; everything else gets the Zigbee ones. Multiprotocol gets both.
+
+**Kind**: inner method of [<code>JS API: Environment utilities</code>](#module_JS API_ Environment utilities)  
+**Returns**: <code>Array.&lt;string&gt;</code> - absolute paths to generation template metafiles  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| zclProperties | <code>\*</code> | One path/name, or an array of them. |
+
 <a name="module_JS API_ Environment utilities..setDevelopmentEnv"></a>
 
 ### JS API: Environment utilities~setDevelopmentEnv()
