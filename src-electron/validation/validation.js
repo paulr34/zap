@@ -30,6 +30,7 @@ const queryPackage = require('../db/query-package.js')
 const env = require('../util/env')
 const queryNotification = require('../db/query-package-notification.js')
 const dbEnum = require('../../src-shared/db-enum.js')
+const matterSdk = require('../sdk/matter.js')
 
 /**
  * Main attribute validation function.
@@ -66,10 +67,6 @@ async function validateAttribute(
     return { defaultValue: ['Attribute not found in endpoint configuration'] }
   }
 
-  if (endpointAttribute.storageOption === dbEnum.storageOption.external) {
-    return { defaultValue: [] }
-  }
-
   let attribute = await queryZcl.selectAttributeById(db, attributeRef)
   // Null check for attribute
   if (!attribute) {
@@ -78,6 +75,26 @@ async function validateAttribute(
       - attributeRef: ${attributeRef}`
     )
     return { defaultValue: ['Attribute definition not found'] }
+  }
+
+  // External attributes have no default value to validate, unless they were
+  // asked to keep it, in which case it is editable and it is generated.
+  if (endpointAttribute.storageOption === dbEnum.storageOption.external) {
+    let packages = await queryPackage.getSessionPackages(db, zapSessionId)
+    let forcedExternal = await matterSdk.getForcedExternalStorage(
+      db,
+      packages.map((p) => p.id)
+    )
+    let cluster = await queryZcl.selectClusterById(db, clusterRef)
+    if (
+      !matterSdk.keepsDefault(
+        forcedExternal,
+        cluster ? cluster.name : null,
+        attribute.name
+      )
+    ) {
+      return { defaultValue: [] }
+    }
   }
   return validateSpecificAttribute(
     endpointAttribute,

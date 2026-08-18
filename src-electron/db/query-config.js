@@ -257,7 +257,16 @@ async function insertOrUpdateAttributeState(
     staticAttribute.storagePolicy ==
     dbEnum.storagePolicy.attributeAccessInterface
   ) {
-    staticAttribute.defaultValue = null
+    let cluster = await queryZcl.selectClusterById(db, clusterRef)
+    if (
+      !queryUpgrade.keepsDefault(
+        forcedExternal,
+        cluster ? cluster.name : null,
+        staticAttribute.name
+      )
+    ) {
+      staticAttribute.defaultValue = null
+    }
   }
   if (staticAttribute == null) {
     throw new Error(`COULD NOT LOCATE ATTRIBUTE: ${attributeId} `)

@@ -764,7 +764,11 @@ WHERE
   }
   if (storagePolicy == dbEnum.storagePolicy.attributeAccessInterface) {
     attribute.storageOption = dbEnum.storageOption.external
-    attribute.defaultValue = null
+    if (
+      !queryUpgrade.keepsDefault(forcedExternal, cluster.name, attributeName)
+    ) {
+      attribute.defaultValue = null
+    }
   }
 
   let arg = [
