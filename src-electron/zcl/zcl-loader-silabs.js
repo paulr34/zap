@@ -43,6 +43,77 @@ const newDataModel = require('./zcl-loader-new-data-model')
 const conformParser = require('../validation/conformance-xml-parser')
 
 /**
+ * Normalizes the attributeAccessInterfaceAttributes section of the metadata
+ * file into a list of { name, storagePolicy } objects per cluster.
+ *
+ * An entry is either the name of an attribute, which means that the attribute
+ * is handled entirely by the attribute access interface:
+ *
+ *   "Access Control": [ "SubjectsPerAccessControlEntry" ]
+ *
+ * or an object that names the attribute and asks for its default value to stay
+ * under ZAP control:
+ *
+ *   "Access Control": [ { "name": "FeatureMap", "keepDefault": true } ]
+ *
+ * Both are forced to external storage. The second form is for attributes whose
+ * value the implementation reads out of the generated endpoint configuration
+ * instead of holding it itself, so the default value is still editable in the
+ * UI and still generated.
+ *
+ * @param {*} attributeAccessInterfaceAttributes contents of the metadata section
+ * @returns the same clusters, with every entry turned into an object
+ */
+function normalizeAttributeAccessInterfaceAttributes(
+  attributeAccessInterfaceAttributes
+) {
+  let knownKeys = ['name', 'keepDefault']
+  let normalized = {}
+  for (let clusterName of Object.keys(attributeAccessInterfaceAttributes)) {
+    let entries = attributeAccessInterfaceAttributes[clusterName]
+    if (!Array.isArray(entries)) {
+      throw new Error(
+        `\n\nattributeAccessInterfaceAttributes["${clusterName}"] must be an array of attributes\n\n`
+      )
+    }
+    normalized[clusterName] = entries.map((entry) => {
+      if (typeof entry == 'string') {
+        return {
+          name: entry,
+          storagePolicy: dbEnum.storagePolicy.attributeAccessInterface
+        }
+      }
+      if (entry == null || typeof entry != 'object' || !('name' in entry)) {
+        throw new Error(
+          `\n\nInvalid entry ${JSON.stringify(
+            entry
+          )} in attributeAccessInterfaceAttributes["${clusterName}"]: expected an attribute name, or an object with a "name" key\n\n`
+        )
+      }
+      let unknownKeys = Object.keys(entry).filter((k) => !knownKeys.includes(k))
+      if (unknownKeys.length > 0) {
+        throw new Error(
+          `\n\nUnknown key(s) ${unknownKeys
+            .map((k) => `"${k}"`)
+            .join(
+              ', '
+            )} for attribute "${entry.name}" in attributeAccessInterfaceAttributes["${clusterName}"]. Known keys are: ${knownKeys
+            .map((k) => `"${k}"`)
+            .join(', ')}\n\n`
+        )
+      }
+      return {
+        name: entry.name,
+        storagePolicy: entry.keepDefault
+          ? dbEnum.storagePolicy.attributeAccessInterfaceWithDefault
+          : dbEnum.storagePolicy.attributeAccessInterface
+      }
+    })
+  }
+  return normalized
+}
+
+/**
  * Promises to read the JSON file and resolve all the data.
  * @param {*} ctx  Context containing information about the file
  * @returns Promise of resolved file.
@@ -129,7 +200,9 @@ async function collectDataFromJsonFile(metadataFile, data) {
 
   if ('attributeAccessInterfaceAttributes' in obj) {
     returnObject.attributeAccessInterfaceAttributes =
-      obj.attributeAccessInterfaceAttributes
+      normalizeAttributeAccessInterfaceAttributes(
+        obj.attributeAccessInterfaceAttributes
+      )
   }
   if ('mandatoryDeviceTypes' in obj) {
     returnObject.mandatoryDeviceTypes = obj.mandatoryDeviceTypes
@@ -678,12 +751,16 @@ function prepareCluster(cluster, context, isExtension = false) {
         attribute.$.type = 'array'
       }
       let storagePolicy = dbEnum.storagePolicy.any
-      if (context.listsUseAttributeAccessInterface && attribute.$.entryType) {
-        storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
+      // An entry in attributeAccessInterfaceAttributes names this attribute
+      // specifically, so it wins over the blanket rule for list types.
+      let aaiEntry = (
+        context.attributeAccessInterfaceAttributes?.[cluster.name] ?? []
+      ).find((e) => e.name == name)
+      if (aaiEntry) {
+        storagePolicy = aaiEntry.storagePolicy
       } else if (
-        context.attributeAccessInterfaceAttributes &&
-        context.attributeAccessInterfaceAttributes[cluster.name] &&
-        context.attributeAccessInterfaceAttributes[cluster.name].includes(name)
+        context.listsUseAttributeAccessInterface &&
+        attribute.$.entryType
       ) {
         storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
       }
@@ -2620,7 +2697,8 @@ async function parseBoolOptions(db, pkgRef, booleanCategories) {
  * @param {*} db - The database connection object.
  * @param {*} pkgRef - The package reference id for which the attributes are being parsed.
  * @param {*} attributeAccessInterfaceAttributes - An object containing the attribute access interface attributes,
- *                                                  structured by cluster.
+ *                                                  structured by cluster, as returned by
+ *                                                  normalizeAttributeAccessInterfaceAttributes.
  * @returns {Promise<void>} A promise that resolves when all attributes have been processed and inserted.
  */
 async function parseattributeAccessInterfaceAttributes(
@@ -2634,8 +2712,8 @@ async function parseattributeAccessInterfaceAttributes(
     const values = attributeAccessInterfaceAttributes[cluster]
     // Prepare the data for insertion
     const optionsKeyValues = values.map((attribute) => ({
-      code: dbEnum.storagePolicy.attributeAccessInterface,
-      label: attribute
+      code: attribute.storagePolicy,
+      label: attribute.name
     }))
     // Insert the data into the database
     try {
@@ -3081,12 +3159,10 @@ async function loadZclJsonOrProperties(db, metafile, isJson = false) {
             known_cluster.id,
             ctx.packageId
           )
-        for (let attrName of ctx.attributeAccessInterfaceAttributes[
-          clusterName
-        ]) {
-          if (!known_cluster_attributes.find((a) => a.name == attrName)) {
+        for (let entry of ctx.attributeAccessInterfaceAttributes[clusterName]) {
+          if (!known_cluster_attributes.find((a) => a.name == entry.name)) {
             throw new Error(
-              `\n\nUnknown attribute "${attrName}" in attributeAccessInterfaceAttributes["${clusterName}"]\n\n`
+              `\n\nUnknown attribute "${entry.name}" in attributeAccessInterfaceAttributes["${clusterName}"]\n\n`
             )
           }
         }
@@ -3133,5 +3209,7 @@ async function loadZclJsonOrProperties(db, metafile, isJson = false) {
 
 exports.loadIndividualSilabsFile = loadIndividualSilabsFile
 exports.loadZclJson = loadZclJson
+exports.normalizeAttributeAccessInterfaceAttributes =
+  normalizeAttributeAccessInterfaceAttributes
 exports.loadZclProperties = loadZclProperties
 exports.processStructItems = processStructItems

@@ -186,15 +186,41 @@ const storagePolicy = {
   any: 'any',
   // Must use external storage and bypasses attribute store altogether.
   attributeAccessInterface: 'attributeAccessInterface',
+  // Must use external storage, just like attributeAccessInterface, but the
+  // default value stays under ZAP control: it can be edited in the UI and it is
+  // generated into the endpoint configuration. The attribute still takes up no
+  // space in the attribute store, so the implementation can read the default
+  // out of the generated (read only) data instead of holding it itself.
+  attributeAccessInterfaceWithDefault: 'attributeAccessInterfaceWithDefault',
   resolve: (txt) => {
     switch (txt) {
       case storagePolicy.any:
-      case storagePolicy.attributeAccess:
+      case storagePolicy.attributeAccessInterface:
+      case storagePolicy.attributeAccessInterfaceWithDefault:
         return txt
       default:
         return storagePolicy.any
     }
-  }
+  },
+  /**
+   * Tells whether a storage policy forces the attribute out of the attribute
+   * store and into the attribute access interface.
+   *
+   * @param {*} policy
+   * @returns true if the policy forces external storage
+   */
+  forcesExternalStorage: (policy) =>
+    policy == storagePolicy.attributeAccessInterface ||
+    policy == storagePolicy.attributeAccessInterfaceWithDefault,
+  /**
+   * Tells whether a storage policy keeps the default value of the attribute
+   * under ZAP control.
+   *
+   * @param {*} policy
+   * @returns true if the default value is kept
+   */
+  keepsDefaultValue: (policy) =>
+    policy == storagePolicy.attributeAccessInterfaceWithDefault
 }
 
 exports.storagePolicy = storagePolicy

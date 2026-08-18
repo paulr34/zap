@@ -762,9 +762,11 @@ WHERE
       attributeName
     )
   }
-  if (storagePolicy == dbEnum.storagePolicy.attributeAccessInterface) {
+  if (dbEnum.storagePolicy.forcesExternalStorage(storagePolicy)) {
     attribute.storageOption = dbEnum.storageOption.external
-    attribute.defaultValue = null
+    if (!dbEnum.storagePolicy.keepsDefaultValue(storagePolicy)) {
+      attribute.defaultValue = null
+    }
   }
 
   let arg = [

@@ -47,6 +47,56 @@ All these aggregation files, are refering to the XML files that contain the ZCL 
 If the aggregation metafile is of a type `zcl.json` or `zcl.properties`, then the XML files it refers to, are assumed to be of the Silicon Labs XML format.
 If the aggregation metafile is using `library.xml` type, then the XML files provided by it are assumed to be of the Zigbee XML format.
 
+### Attributes handled by the attribute access interface
+
+Some attributes are not held in the attribute store at all: the implementation
+answers reads and writes for them itself. A `zcl.json` metafile names those
+attributes in `attributeAccessInterfaceAttributes`, per cluster. ZAP forces them
+to `External` storage and does not let that be changed in the UI:
+
+```json
+"attributeAccessInterfaceAttributes": {
+  "Access Control": [
+    "SubjectsPerAccessControlEntry",
+    "TargetsPerAccessControlEntry",
+    "AccessControlEntriesPerFabric"
+  ]
+}
+```
+
+By default such an attribute has no default value: the field is not editable in
+the UI and nothing is generated for it, since there is no attribute store slot
+for a default value to be copied into.
+
+That is not what every implementation wants. An attribute such as `FeatureMap`
+holds a fixed value that is decided when the endpoint is configured, and an
+implementation that answers reads for it still has to get that value from
+somewhere. Holding it in the implementation means holding it in RAM, for a value
+that never changes. An entry can therefore ask for the default value to stay
+under ZAP control:
+
+```json
+"attributeAccessInterfaceAttributes": {
+  "Software Diagnostics": [
+    "CurrentHeapFree",
+    { "name": "FeatureMap", "keepDefault": true }
+  ]
+}
+```
+
+Both forms can be mixed in the same list. For an entry with `keepDefault`:
+
+- the attribute is still forced to `External` storage, so it takes up no space
+  in the attribute store;
+- its default value stays editable in the UI;
+- its default value is generated into the endpoint configuration, so the
+  implementation can read it out of the generated (read only) data instead of
+  holding a copy of it.
+
+A default value can only be kept when its size is known, which rules out list
+typed attributes and attributes whose type has no fixed size. Asking to keep the
+default value of one of those has no effect.
+
 ## Generation templates and extensions
 
 Generation templates and extensions are provided by the SDK. They are the input to the ZAP tool. They control generation and tailor the ZAP tool specifically to a given SDK, by providing the correct details of the implementation that ZAP cares about.
@@ -79,7 +129,7 @@ The `templates` key contained in the `gen-templates.json` file above, is an arra
 | name     | string     | Human readable name of the template. Mostly used in logging and menu items.                                                                                                                                           |
 | output   | string     | Name of the output file generated. May contain replacement patterns (see below).                                                                                                                                      |
 | iterator | string     | If this template produces multiple files, iterating over certain object, then this field will be present. Possible values are `availableCluster`, `selectedCluster`,`selectedClientCluster`, `selectedServerCluster`. |
-| static   | string     | If set to the string 'true', marks this template as a static template. Static templates will not generate if `generateStaticTemplates` is false for the session.                                                                   |
+| static   | string     | If set to the string 'true', marks this template as a static template. Static templates will not generate if `generateStaticTemplates` is false for the session.                                                      |
 
 The _replacement pattern_ inside the output key, comes handy when iterator key is used and defines how each generated file will be named. Replacement patterns are in a format of `{key}` or `{key:modifier}`. The `key` can be any usual key that the iterated object provides. For example, if you iterate over cluster, these can be `code`, `name`, `description`, `define` and all the usual keys that a cluster supports. So if your output contains `{code}` then this pattern will be replaced by the actual cluster code.
 
@@ -101,12 +151,12 @@ The following is the list of special meanings:
 Following table lists generator options supported by the template generator category.
 
 | Key                        | Value                                                                                                                                                                                                                                                                  |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | postProcessMulti           | a string, representing command to execute, with the list of generated files appended in a single command line. This would be typically used by zap to execute commands like `uncrustify`, or similar post-processing, which can take multiple file names as arguments. |
 | postProcessSingle          | a string, representing a command to execute for each individual file appended in a single command line. This would be typically used by commands or scripts that clean up the generated files, and can only take one file name at a time as an argument.               |
 | postProcessConditionalFile | a path, representing a file. If this file does not exist, then a specified post-process action will not get executed.                                                                                                                                                  |
 | routeErrToOut              | a boolean flag. If it's set to true, then any stderr from the post-process will be routed to stdout. This is due that a driving process sometimes has trouble dealing with both stdout and stderr, so this flag might help you preserve the logs.                      |
-| generateStaticTemplates    | string     | A string flag ('true'/'false'). The default for whether static templates are generated. If 'false', they are not. A session-key in the .zap file can override this default.                                                                                        |
+| generateStaticTemplates    | string                                                                                                                                                                                                                                                                 | A string flag ('true'/'false'). The default for whether static templates are generated. If 'false', they are not. A session-key in the .zap file can override this default. |
 
 ## Template key: override
 
