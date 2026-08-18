@@ -31,6 +31,12 @@ const dbEnum = require('../../src-shared/db-enum.js')
  * Utilizes the attribute access interface to query storage policies
  * associated with the specified package ID.
  *
+ * Returns both the attributes that are forced to external storage and the
+ * subset of those whose default value stays under ZAP control. The optionCode
+ * of each returned entry says which one it is:
+ * - attributeAccessInterface: forced to External storage
+ * - keepDefault: the default value is not cleared
+ *
  * @param {Object} db - Database connection object.
  * @param {Number} packageIds - The ID of the packages to query.
  * @returns {Promise<Array>} A promise that resolves to an array of forced external storage settings.
@@ -44,7 +50,7 @@ async function getForcedExternalStorage(db, packageIds) {
 
     let forcedExternal = await queryPackage.getAttributeAccessInterface(
       db,
-      dbEnum.storagePolicy.attributeAccessInterface,
+      [dbEnum.storagePolicy.attributeAccessInterface, dbEnum.keepDefaultOption],
       packageIdsArray
     )
     return forcedExternal
@@ -52,6 +58,43 @@ async function getForcedExternalStorage(db, packageIds) {
     console.error('Error fetching forced external storage:', error)
     throw error // Optionally re-throw the error for further handling
   }
+}
+
+/**
+ * Tells whether a cluster/attribute pair from getForcedExternalStorage is
+ * forced to external storage.
+ *
+ * @param {Array} forcedExternal - An array of external options.
+ * @param {String} clusterName - The name of the cluster.
+ * @param {String} attributeName - The name of the attribute.
+ * @returns {boolean}
+ */
+function isForcedExternal(forcedExternal, clusterName, attributeName) {
+  return forcedExternal.some(
+    (option) =>
+      option.optionCategory == clusterName &&
+      option.optionLabel == attributeName &&
+      option.optionCode == dbEnum.storagePolicy.attributeAccessInterface
+  )
+}
+
+/**
+ * Tells whether a cluster/attribute pair from getForcedExternalStorage keeps
+ * its default value. The attribute is still External; only the default is left
+ * alone.
+ *
+ * @param {Array} forcedExternal - An array of external options.
+ * @param {String} clusterName - The name of the cluster.
+ * @param {String} attributeName - The name of the attribute.
+ * @returns {boolean}
+ */
+function keepsDefault(forcedExternal, clusterName, attributeName) {
+  return forcedExternal.some(
+    (option) =>
+      option.optionCategory == clusterName &&
+      option.optionLabel == attributeName &&
+      option.optionCode == dbEnum.keepDefaultOption
+  )
 }
 
 /**
@@ -83,16 +126,10 @@ async function computeStoragePolicyForGlobalAttributes(
       attributes.map(async (attribute) => {
         if (attribute.clusterId == null) {
           forcedExternal = await getForcedExternalStorage(db, packageIds)
-          forcedExternal.some((option) => {
-            if (
-              option.optionCategory == clusterName &&
-              option.optionLabel == attribute.name
-            ) {
-              attribute.storagePolicy =
-                dbEnum.storagePolicy.attributeAccessInterface
-              return true
-            }
-          })
+          if (isForcedExternal(forcedExternal, clusterName, attribute.name)) {
+            attribute.storagePolicy =
+              dbEnum.storagePolicy.attributeAccessInterface
+          }
         }
         return attribute
       })
@@ -156,15 +193,9 @@ async function computeStoragePolicyNewConfig(
 ) {
   try {
     let clusterName = await queryCluster.selectClusterName(db, clusterRef)
-    forcedExternal.some((option) => {
-      if (
-        option.optionCategory == clusterName &&
-        option.optionLabel == attributeName
-      ) {
-        storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
-        return true
-      }
-    })
+    if (isForcedExternal(forcedExternal, clusterName, attributeName)) {
+      storagePolicy = dbEnum.storagePolicy.attributeAccessInterface
+    }
     return storagePolicy
   } catch (error) {
     console.error('Error computing storage policy new config:', error)
@@ -196,16 +227,9 @@ async function computeStorageImport(
 ) {
   try {
     let updatedStoragePolicy = storagePolicy
-    forcedExternal.some((option) => {
-      if (
-        option.optionCategory == clusterName &&
-        option.optionLabel == attributeName
-      ) {
-        updatedStoragePolicy = dbEnum.storagePolicy.attributeAccessInterface
-        return true
-      }
-      return false
-    })
+    if (isForcedExternal(forcedExternal, clusterName, attributeName)) {
+      updatedStoragePolicy = dbEnum.storagePolicy.attributeAccessInterface
+    }
     return updatedStoragePolicy
   } catch (error) {
     console.error('Error computing storage import:', error)
@@ -214,6 +238,8 @@ async function computeStorageImport(
 }
 
 exports.getForcedExternalStorage = getForcedExternalStorage
+exports.isForcedExternal = isForcedExternal
+exports.keepsDefault = keepsDefault
 exports.computeStorageImport = computeStorageImport
 exports.computeStoragePolicyNewConfig = computeStoragePolicyNewConfig
 exports.computeStorageOptionNewConfig = computeStorageOptionNewConfig

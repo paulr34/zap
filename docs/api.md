@@ -10270,6 +10270,9 @@ This module contains the API for templating. For more detailed instructions, rea
     * [~endpoint_attribute_long_defaults(options)](#module_Templating API_ Matter endpoint config helpers..endpoint_attribute_long_defaults) ⇒
     * [~asMEI(manufacturerCode, code)](#module_Templating API_ Matter endpoint config helpers..asMEI) ⇒
     * [~determineAttributeDefaultValue(specifiedDefault, type, typeSize, isNullable, db, sessionId)](#module_Templating API_ Matter endpoint config helpers..determineAttributeDefaultValue) ⇒
+    * [~keepDefaultValueKey(clusterName, attributeName)](#module_Templating API_ Matter endpoint config helpers..keepDefaultValueKey) ⇒
+    * [~collectAttributesKeepingDefaultValue(db, zclPackageIds)](#module_Templating API_ Matter endpoint config helpers..collectAttributesKeepingDefaultValue) ⇒
+    * [~keepsDefaultValueForExternalStorage(attribute, cluster, options)](#module_Templating API_ Matter endpoint config helpers..keepsDefaultValueForExternalStorage) ⇒
     * [~collectAttributes()](#module_Templating API_ Matter endpoint config helpers..collectAttributes)
     * [~collectAttributeSizes(db, zclPackageIds, endpointTypes)](#module_Templating API_ Matter endpoint config helpers..collectAttributeSizes) ⇒
     * [~collectAttributeTypeInfo(db, zclPackageIds, endpointTypes)](#module_Templating API_ Matter endpoint config helpers..collectAttributeTypeInfo) ⇒
@@ -10724,6 +10727,55 @@ Get the default value of an attribute.
 | isNullable | <code>\*</code> | 
 | db | <code>\*</code> | 
 | sessionId | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config helpers..keepDefaultValueKey"></a>
+
+### Templating API: Matter endpoint config helpers~keepDefaultValueKey(clusterName, attributeName) ⇒
+Builds the key under which a cluster/attribute pair is looked up in the set
+of attributes that keep their default value.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config helpers</code>](#module_Templating API_ Matter endpoint config helpers)  
+**Returns**: the lookup key  
+
+| Param | Type |
+| --- | --- |
+| clusterName | <code>\*</code> | 
+| attributeName | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config helpers..collectAttributesKeepingDefaultValue"></a>
+
+### Templating API: Matter endpoint config helpers~collectAttributesKeepingDefaultValue(db, zclPackageIds) ⇒
+Collects the cluster/attribute pairs whose storage policy forces external
+storage but keeps the default value under ZAP control.
+
+The storage policy of a global attribute, such as FeatureMap, is not on the
+attribute itself: there is one attribute row shared by every cluster, so the
+policy is recorded per cluster/attribute pair instead. That is why this is
+looked up by name rather than read off the attribute.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config helpers</code>](#module_Templating API_ Matter endpoint config helpers)  
+**Returns**: a set of keys built by keepDefaultValueKey  
+
+| Param | Type |
+| --- | --- |
+| db | <code>\*</code> | 
+| zclPackageIds | <code>\*</code> | 
+
+<a name="module_Templating API_ Matter endpoint config helpers..keepsDefaultValueForExternalStorage"></a>
+
+### Templating API: Matter endpoint config helpers~keepsDefaultValueForExternalStorage(attribute, cluster, options) ⇒
+Tells whether an external attribute keeps its default value, which means that
+the default value is generated even though the attribute takes up no space in
+the attribute store.
+
+**Kind**: inner method of [<code>Templating API: Matter endpoint config helpers</code>](#module_Templating API_ Matter endpoint config helpers)  
+**Returns**: true if the default value is kept  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| attribute | <code>\*</code> |  |
+| cluster | <code>\*</code> |  |
+| options | <code>\*</code> | collectAttributes options |
 
 <a name="module_Templating API_ Matter endpoint config helpers..collectAttributes"></a>
 
@@ -22790,6 +22842,7 @@ This module provides the APIs for dotdot Loading
     * [~prepXmlCommand(c)](#module_Loader API_ Loader APIs..prepXmlCommand) ⇒
     * [~prepXmlEvent(e)](#module_Loader API_ Loader APIs..prepXmlEvent) ⇒
     * [~parseSingleNewXmlFile(f)](#module_Loader API_ Loader APIs..parseSingleNewXmlFile) ⇒
+    * [~normalizeAttributeAccessInterfaceAttributes(attributeAccessInterfaceAttributes)](#module_Loader API_ Loader APIs..normalizeAttributeAccessInterfaceAttributes) ⇒
     * [~collectDataFromJsonFile(ctx)](#module_Loader API_ Loader APIs..collectDataFromJsonFile) ⇒
     * [~collectDataFromPropertiesFile(ctx)](#module_Loader API_ Loader APIs..collectDataFromPropertiesFile) ⇒
     * [~maskToType(mask)](#module_Loader API_ Loader APIs..maskToType) ⇒
@@ -23513,6 +23566,34 @@ Parse xml file.
 | Param | Type |
 | --- | --- |
 | f | <code>\*</code> | 
+
+<a name="module_Loader API_ Loader APIs..normalizeAttributeAccessInterfaceAttributes"></a>
+
+### Loader API: Loader APIs~normalizeAttributeAccessInterfaceAttributes(attributeAccessInterfaceAttributes) ⇒
+Normalizes the attributeAccessInterfaceAttributes section of the metadata
+file into a list of { name, keepDefault } objects per cluster.
+
+An entry is either the name of an attribute, which means that the attribute
+is handled entirely by the attribute access interface:
+
+  "Access Control": [ "SubjectsPerAccessControlEntry" ]
+
+or an object that names the attribute and asks for its default value to stay
+under ZAP control:
+
+  "Access Control": [ { "name": "FeatureMap", "keepDefault": true } ]
+
+Both are forced to external storage. The second form does not change that:
+it only leaves the default value editable and generated, so the
+implementation can read it out of the generated endpoint configuration
+instead of holding it itself.
+
+**Kind**: inner method of [<code>Loader API: Loader APIs</code>](#module_Loader API_ Loader APIs)  
+**Returns**: the same clusters, with every entry turned into an object  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| attributeAccessInterfaceAttributes | <code>\*</code> | contents of the metadata section |
 
 <a name="module_Loader API_ Loader APIs..collectDataFromJsonFile"></a>
 
@@ -24366,7 +24447,7 @@ The ATTRIBUTE table has cluster_ref as null for global attributes so this second
 | --- | --- | --- |
 | db | <code>\*</code> | The database connection object. |
 | pkgRef | <code>\*</code> | The package reference id for which the attributes are being parsed. |
-| attributeAccessInterfaceAttributes | <code>\*</code> | An object containing the attribute access interface attributes,                                                  structured by cluster. |
+| attributeAccessInterfaceAttributes | <code>\*</code> | An object containing the attribute access interface attributes,                                                  structured by cluster, as returned by                                                  normalizeAttributeAccessInterfaceAttributes. |
 
 <a name="module_Loader API_ Loader APIs..parseDefaults"></a>
 
@@ -24667,6 +24748,7 @@ This module provides the APIs for new data model loading
     * [~prepXmlCommand(c)](#module_Loader API_ Loader APIs..prepXmlCommand) ⇒
     * [~prepXmlEvent(e)](#module_Loader API_ Loader APIs..prepXmlEvent) ⇒
     * [~parseSingleNewXmlFile(f)](#module_Loader API_ Loader APIs..parseSingleNewXmlFile) ⇒
+    * [~normalizeAttributeAccessInterfaceAttributes(attributeAccessInterfaceAttributes)](#module_Loader API_ Loader APIs..normalizeAttributeAccessInterfaceAttributes) ⇒
     * [~collectDataFromJsonFile(ctx)](#module_Loader API_ Loader APIs..collectDataFromJsonFile) ⇒
     * [~collectDataFromPropertiesFile(ctx)](#module_Loader API_ Loader APIs..collectDataFromPropertiesFile) ⇒
     * [~maskToType(mask)](#module_Loader API_ Loader APIs..maskToType) ⇒
@@ -25390,6 +25472,34 @@ Parse xml file.
 | Param | Type |
 | --- | --- |
 | f | <code>\*</code> | 
+
+<a name="module_Loader API_ Loader APIs..normalizeAttributeAccessInterfaceAttributes"></a>
+
+### Loader API: Loader APIs~normalizeAttributeAccessInterfaceAttributes(attributeAccessInterfaceAttributes) ⇒
+Normalizes the attributeAccessInterfaceAttributes section of the metadata
+file into a list of { name, keepDefault } objects per cluster.
+
+An entry is either the name of an attribute, which means that the attribute
+is handled entirely by the attribute access interface:
+
+  "Access Control": [ "SubjectsPerAccessControlEntry" ]
+
+or an object that names the attribute and asks for its default value to stay
+under ZAP control:
+
+  "Access Control": [ { "name": "FeatureMap", "keepDefault": true } ]
+
+Both are forced to external storage. The second form does not change that:
+it only leaves the default value editable and generated, so the
+implementation can read it out of the generated endpoint configuration
+instead of holding it itself.
+
+**Kind**: inner method of [<code>Loader API: Loader APIs</code>](#module_Loader API_ Loader APIs)  
+**Returns**: the same clusters, with every entry turned into an object  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| attributeAccessInterfaceAttributes | <code>\*</code> | contents of the metadata section |
 
 <a name="module_Loader API_ Loader APIs..collectDataFromJsonFile"></a>
 
@@ -26243,7 +26353,7 @@ The ATTRIBUTE table has cluster_ref as null for global attributes so this second
 | --- | --- | --- |
 | db | <code>\*</code> | The database connection object. |
 | pkgRef | <code>\*</code> | The package reference id for which the attributes are being parsed. |
-| attributeAccessInterfaceAttributes | <code>\*</code> | An object containing the attribute access interface attributes,                                                  structured by cluster. |
+| attributeAccessInterfaceAttributes | <code>\*</code> | An object containing the attribute access interface attributes,                                                  structured by cluster, as returned by                                                  normalizeAttributeAccessInterfaceAttributes. |
 
 <a name="module_Loader API_ Loader APIs..parseDefaults"></a>
 
@@ -26544,6 +26654,7 @@ This module provides the APIs for ZCL/Data-Model loading.
     * [~prepXmlCommand(c)](#module_Loader API_ Loader APIs..prepXmlCommand) ⇒
     * [~prepXmlEvent(e)](#module_Loader API_ Loader APIs..prepXmlEvent) ⇒
     * [~parseSingleNewXmlFile(f)](#module_Loader API_ Loader APIs..parseSingleNewXmlFile) ⇒
+    * [~normalizeAttributeAccessInterfaceAttributes(attributeAccessInterfaceAttributes)](#module_Loader API_ Loader APIs..normalizeAttributeAccessInterfaceAttributes) ⇒
     * [~collectDataFromJsonFile(ctx)](#module_Loader API_ Loader APIs..collectDataFromJsonFile) ⇒
     * [~collectDataFromPropertiesFile(ctx)](#module_Loader API_ Loader APIs..collectDataFromPropertiesFile) ⇒
     * [~maskToType(mask)](#module_Loader API_ Loader APIs..maskToType) ⇒
@@ -27267,6 +27378,34 @@ Parse xml file.
 | Param | Type |
 | --- | --- |
 | f | <code>\*</code> | 
+
+<a name="module_Loader API_ Loader APIs..normalizeAttributeAccessInterfaceAttributes"></a>
+
+### Loader API: Loader APIs~normalizeAttributeAccessInterfaceAttributes(attributeAccessInterfaceAttributes) ⇒
+Normalizes the attributeAccessInterfaceAttributes section of the metadata
+file into a list of { name, keepDefault } objects per cluster.
+
+An entry is either the name of an attribute, which means that the attribute
+is handled entirely by the attribute access interface:
+
+  "Access Control": [ "SubjectsPerAccessControlEntry" ]
+
+or an object that names the attribute and asks for its default value to stay
+under ZAP control:
+
+  "Access Control": [ { "name": "FeatureMap", "keepDefault": true } ]
+
+Both are forced to external storage. The second form does not change that:
+it only leaves the default value editable and generated, so the
+implementation can read it out of the generated endpoint configuration
+instead of holding it itself.
+
+**Kind**: inner method of [<code>Loader API: Loader APIs</code>](#module_Loader API_ Loader APIs)  
+**Returns**: the same clusters, with every entry turned into an object  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| attributeAccessInterfaceAttributes | <code>\*</code> | contents of the metadata section |
 
 <a name="module_Loader API_ Loader APIs..collectDataFromJsonFile"></a>
 
@@ -28120,7 +28259,7 @@ The ATTRIBUTE table has cluster_ref as null for global attributes so this second
 | --- | --- | --- |
 | db | <code>\*</code> | The database connection object. |
 | pkgRef | <code>\*</code> | The package reference id for which the attributes are being parsed. |
-| attributeAccessInterfaceAttributes | <code>\*</code> | An object containing the attribute access interface attributes,                                                  structured by cluster. |
+| attributeAccessInterfaceAttributes | <code>\*</code> | An object containing the attribute access interface attributes,                                                  structured by cluster, as returned by                                                  normalizeAttributeAccessInterfaceAttributes. |
 
 <a name="module_Loader API_ Loader APIs..parseDefaults"></a>
 
@@ -28421,6 +28560,7 @@ This module provides the APIs for for common functionality related to loading.
     * [~prepXmlCommand(c)](#module_Loader API_ Loader APIs..prepXmlCommand) ⇒
     * [~prepXmlEvent(e)](#module_Loader API_ Loader APIs..prepXmlEvent) ⇒
     * [~parseSingleNewXmlFile(f)](#module_Loader API_ Loader APIs..parseSingleNewXmlFile) ⇒
+    * [~normalizeAttributeAccessInterfaceAttributes(attributeAccessInterfaceAttributes)](#module_Loader API_ Loader APIs..normalizeAttributeAccessInterfaceAttributes) ⇒
     * [~collectDataFromJsonFile(ctx)](#module_Loader API_ Loader APIs..collectDataFromJsonFile) ⇒
     * [~collectDataFromPropertiesFile(ctx)](#module_Loader API_ Loader APIs..collectDataFromPropertiesFile) ⇒
     * [~maskToType(mask)](#module_Loader API_ Loader APIs..maskToType) ⇒
@@ -29144,6 +29284,34 @@ Parse xml file.
 | Param | Type |
 | --- | --- |
 | f | <code>\*</code> | 
+
+<a name="module_Loader API_ Loader APIs..normalizeAttributeAccessInterfaceAttributes"></a>
+
+### Loader API: Loader APIs~normalizeAttributeAccessInterfaceAttributes(attributeAccessInterfaceAttributes) ⇒
+Normalizes the attributeAccessInterfaceAttributes section of the metadata
+file into a list of { name, keepDefault } objects per cluster.
+
+An entry is either the name of an attribute, which means that the attribute
+is handled entirely by the attribute access interface:
+
+  "Access Control": [ "SubjectsPerAccessControlEntry" ]
+
+or an object that names the attribute and asks for its default value to stay
+under ZAP control:
+
+  "Access Control": [ { "name": "FeatureMap", "keepDefault": true } ]
+
+Both are forced to external storage. The second form does not change that:
+it only leaves the default value editable and generated, so the
+implementation can read it out of the generated endpoint configuration
+instead of holding it itself.
+
+**Kind**: inner method of [<code>Loader API: Loader APIs</code>](#module_Loader API_ Loader APIs)  
+**Returns**: the same clusters, with every entry turned into an object  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| attributeAccessInterfaceAttributes | <code>\*</code> | contents of the metadata section |
 
 <a name="module_Loader API_ Loader APIs..collectDataFromJsonFile"></a>
 
@@ -29997,7 +30165,7 @@ The ATTRIBUTE table has cluster_ref as null for global attributes so this second
 | --- | --- | --- |
 | db | <code>\*</code> | The database connection object. |
 | pkgRef | <code>\*</code> | The package reference id for which the attributes are being parsed. |
-| attributeAccessInterfaceAttributes | <code>\*</code> | An object containing the attribute access interface attributes,                                                  structured by cluster. |
+| attributeAccessInterfaceAttributes | <code>\*</code> | An object containing the attribute access interface attributes,                                                  structured by cluster, as returned by                                                  normalizeAttributeAccessInterfaceAttributes. |
 
 <a name="module_Loader API_ Loader APIs..parseDefaults"></a>
 
