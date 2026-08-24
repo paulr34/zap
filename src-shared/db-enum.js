@@ -197,6 +197,11 @@ const storagePolicy = {
   }
 }
 
+// Package option code for attributeAccessInterfaceAttributes entries that
+// ask for the default value to stay under ZAP control. This is not a storage
+// policy: those attributes are still attributeAccessInterface / External.
+exports.keepDefaultOption = 'keepDefault'
+
 exports.storagePolicy = storagePolicy
 
 // When SDK supports a custom device, these are the default values for it.

@@ -186,12 +186,26 @@ limitations under the License.
                   ? 'grey'
                   : ''
               "
-              :disable="isDisabledDefault(props.row.id, selectedCluster.id)"
+              :disable="
+                isDisabledDefault(
+                  props.row.id,
+                  props.row.label,
+                  selectedCluster.id
+                )
+              "
               :model-value="
                 props.row.isNullable &&
-                defaultValueCheck(props.row.id, selectedCluster.id) === null
+                defaultValueCheck(
+                  props.row.id,
+                  props.row.label,
+                  selectedCluster.id
+                ) === null
                   ? 'NULL'
-                  : defaultValueCheck(props.row.id, selectedCluster.id)
+                  : defaultValueCheck(
+                      props.row.id,
+                      props.row.label,
+                      selectedCluster.id
+                    )
               "
               :error="
                 !isDefaultValueValid(
@@ -263,15 +277,28 @@ export default {
         )
       })
     },
+    /* Attributes that are forced external can still keep their default value
+       under ZAP control, in which case the default stays editable even though
+       the attribute takes up no space in the attribute store. */
+    checkKeepDefault(name) {
+      return this.forcedExternal.some((option) => {
+        return (
+          option.optionCategory == this.selectedCluster.label &&
+          option.optionLabel == name &&
+          option.optionCode == DbEnum.keepDefaultOption
+        )
+      })
+    },
     //return true and disable default field if Storage is External AND if attribute is not enabled
-    isDisabledDefault(id, selectedClusterId) {
+    isDisabledDefault(id, name, selectedClusterId) {
       return (
         !this.selection.includes(
           this.hashAttributeIdClusterId(id, selectedClusterId)
         ) ||
-        this.selectionStorageOption[
+        (this.selectionStorageOption[
           this.hashAttributeIdClusterId(id, selectedClusterId)
-        ] == 'External'
+        ] == 'External' &&
+          !this.checkKeepDefault(name))
       )
     },
     //return true and disable Storage if forced External AND if attribute is not enabled
@@ -289,8 +316,8 @@ export default {
       )
     },
     //if disabled return null to be set as the default value
-    defaultValueCheck(id, selectedClusterId) {
-      if (this.isDisabledDefault(id, selectedClusterId)) {
+    defaultValueCheck(id, name, selectedClusterId) {
+      if (this.isDisabledDefault(id, name, selectedClusterId)) {
         return null
       } else {
         return this.selectionDefault[

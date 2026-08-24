@@ -704,25 +704,23 @@ async function getAllPackages(db) {
  * for more flexible queries.
  *
  * @param {Object} db - The database connection object.
- * @param {string} code - The option code or storage policy code to query for.
+ * @param {string|Array<string>} code - The option code or storage policy code(s) to query for. Can be a single code or an array of codes.
  * @param {number|Array<number>} packageIds - The ID(s) of the package(s) to which the options are related. Can be a single ID or an array of IDs.
  * @returns {Promise<Array>} A promise that resolves to an array of option objects, each containing the option category, code, and label.
  */
 async function getAttributeAccessInterface(db, code, packageIds) {
   try {
-    // Ensure packageIds is always an array
+    // Ensure code and packageIds are always arrays
+    let codes = Array.isArray(code) ? code : [code]
     if (!Array.isArray(packageIds)) {
       packageIds = [packageIds]
     }
 
-    let packageRefCondition = `po.PACKAGE_REF = ?`
-    let attributePackageRefCondition = `a.PACKAGE_REF = ?`
-    let queryParams = [code, ...packageIds, code, ...packageIds]
-
-    // Since packageIds is now always an array, adjust the query and parameters accordingly
-    const placeholders = packageIds.map(() => '?').join(', ')
-    packageRefCondition = `po.PACKAGE_REF IN (${placeholders})`
-    attributePackageRefCondition = `a.PACKAGE_REF IN (${placeholders})`
+    const codePlaceholders = codes.map(() => '?').join(', ')
+    const packagePlaceholders = packageIds.map(() => '?').join(', ')
+    let packageRefCondition = `po.PACKAGE_REF IN (${packagePlaceholders})`
+    let attributePackageRefCondition = `a.PACKAGE_REF IN (${packagePlaceholders})`
+    let queryParams = [...codes, ...packageIds, ...codes, ...packageIds]
 
     const extendedQuery = `
       SELECT
@@ -732,7 +730,7 @@ async function getAttributeAccessInterface(db, code, packageIds) {
       FROM
           PACKAGE_OPTION po
       WHERE
-          po.OPTION_CODE = ?
+          po.OPTION_CODE IN (${codePlaceholders})
           AND ${packageRefCondition}
 
       UNION
@@ -745,7 +743,7 @@ async function getAttributeAccessInterface(db, code, packageIds) {
           ATTRIBUTE a
       LEFT JOIN CLUSTER c ON a.CLUSTER_REF = c.CLUSTER_ID
       WHERE
-          a.STORAGE_POLICY = ?
+          a.STORAGE_POLICY IN (${codePlaceholders})
           AND ${attributePackageRefCondition}
     `
 

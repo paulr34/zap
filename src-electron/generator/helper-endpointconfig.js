@@ -30,6 +30,7 @@ const bin = require('../util/bin')
 const types = require('../util/types.js')
 const zclUtil = require('../util/zcl-util.js')
 const dbEnum = require('../../src-shared/db-enum.js')
+const matterSdk = require('../sdk/matter.js')
 /**
  * Returns number of endpoint types.
  *
@@ -870,6 +871,67 @@ async function determineAttributeDefaultValue(
 }
 
 /**
+ * Builds the key under which a cluster/attribute pair is looked up in the set
+ * of attributes that keep their default value.
+ *
+ * @param {*} clusterName
+ * @param {*} attributeName
+ * @returns the lookup key
+ */
+function keepDefaultValueKey(clusterName, attributeName) {
+  return `${clusterName}||${attributeName}`.toLowerCase()
+}
+
+/**
+ * Collects the cluster/attribute pairs whose storage policy forces external
+ * storage but keeps the default value under ZAP control.
+ *
+ * The storage policy of a global attribute, such as FeatureMap, is not on the
+ * attribute itself: there is one attribute row shared by every cluster, so the
+ * policy is recorded per cluster/attribute pair instead. That is why this is
+ * looked up by name rather than read off the attribute.
+ *
+ * @param {*} db
+ * @param {*} zclPackageIds
+ * @returns a set of keys built by keepDefaultValueKey
+ */
+async function collectAttributesKeepingDefaultValue(db, zclPackageIds) {
+  let forcedExternal = await matterSdk.getForcedExternalStorage(
+    db,
+    zclPackageIds
+  )
+  let keys = new Set()
+  forcedExternal.forEach((option) => {
+    if (
+      option.optionCategory != null &&
+      option.optionCode == dbEnum.keepDefaultOption
+    ) {
+      keys.add(keepDefaultValueKey(option.optionCategory, option.optionLabel))
+    }
+  })
+  return keys
+}
+
+/**
+ * Tells whether an external attribute keeps its default value, which means that
+ * the default value is generated even though the attribute takes up no space in
+ * the attribute store.
+ *
+ * @param {*} attribute
+ * @param {*} cluster
+ * @param {*} options collectAttributes options
+ * @returns true if the default value is kept
+ */
+function keepsDefaultValueForExternalStorage(attribute, cluster, options) {
+  return (
+    options.attributesKeepingDefaultValue != null &&
+    options.attributesKeepingDefaultValue.has(
+      keepDefaultValueKey(cluster.name, attribute.name)
+    )
+  )
+}
+
+/**
  * Attribute collection works like this:
  *    1.) Go over all the clusters that exist.
  *    2.) If client is included on at least one endpoint add client atts.
@@ -996,7 +1058,6 @@ async function collectAttributes(
         // the read/write store.
         if (a.storage == dbEnum.storageOption.external) {
           storageSize = 0
-          defaultSize = 0
           // Some external attributes do not have a usable typeSize
           // (e.g. structs or lists of structs); the value of typeSize in those
           // cases is an error string.  Use 0 in those cases.
@@ -1010,7 +1071,19 @@ async function collectAttributes(
           if (a.typeInfo.atomicType == 'array') {
             typeSize = 0
           }
-          attributeDefaultValue = undefined
+          // Some external attributes keep their default value: their
+          // implementation reads it out of the generated (read only) data
+          // instead of holding it itself. Those still take up space in the
+          // default store, but never in the read/write store. A default value
+          // can only be kept when its size is known, and the two cases above
+          // are exactly the cases where it is not.
+          if (
+            typeSize == 0 ||
+            !keepsDefaultValueForExternalStorage(a, c, options)
+          ) {
+            defaultSize = 0
+            attributeDefaultValue = undefined
+          }
         }
 
         let defaultValueIsMacro = false
@@ -1514,15 +1587,20 @@ function endpoint_config(options) {
     .then((endpointTypes) =>
       collectAttributeSizes(db, this.global.zclPackageIds, endpointTypes)
     )
-    .then((endpointTypes) =>
-      collectAttributes(
+    .then(async (endpointTypes) => {
+      collectAttributesOptions.attributesKeepingDefaultValue =
+        await collectAttributesKeepingDefaultValue(
+          db,
+          this.global.zclPackageIds
+        )
+      return collectAttributes(
         db,
         sessionId,
         endpointTypes,
         collectAttributesOptions,
         this.global.zclPackageIds
       )
-    )
+    })
     .then((collection) => {
       Object.assign(newContext, collection)
     })
