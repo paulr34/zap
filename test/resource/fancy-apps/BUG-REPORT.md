@@ -873,6 +873,53 @@ Matter test templates do not define cluster→component defaults, so zero UC ids
 
 Possible causes (not confirmed): extension default lookup, cluster name vs `clusterCode` key, or session package selection when several gen-template packages are loaded in one process DB.
 
+### Bug 28: CLI `validate` binds a file to the wrong ZCL package (default `--packageMatch ignore`)
+
+Follow-up investigation into whether any of these errors come from the CLI rather than the data. One class does.
+
+`startValidate` loads **every** `-z` metafile into one database up front, then imports each `.zap` sequentially into that same DB, passing the CLI default `--packageMatch ignore`:
+
+```js
+let importResult = await importJs.importDataFromFile(db, singlePath, {
+  defaultZclMetafile: argv.zclProperties,
+  packageMatch: argv.packageMatch // default: 'ignore'
+})
+```
+
+With more than one ZCL package present, the second file can be associated with the **wrong** package. Probe of the exact sequence (`matter-test.zap` then `three-endpoint-device.zap`) shows the Zigbee file bound to the Matter data model:
+
+```
+file2 session packages: [
+  { PACKAGE_ID: 2,   TYPE: 'zcl-properties',    CATEGORY: 'matter' },   <-- wrong
+  { PACKAGE_ID: 125, TYPE: 'gen-templates-json', CATEGORY: 'zigbee' }
+]
+file2 three-endpoint: attrRows=149 nullRefs=107
+```
+
+Cluster and attribute refs then do not resolve, so `validateAttribute` returns **“Attribute not found in endpoint configuration”** with `clusterRef: null`, `attributeRef: null`, and empty cluster/attribute names.
+
+Measured on stock `test/resource/three-endpoint-device.zap`:
+
+| How it was validated                                      | errors | “Attribute not found” |
+| --------------------------------------------------------- | ------ | --------------------- |
+| Alone, fresh `--stateDirectory`                           | 47     | 0                     |
+| After a Matter file in the same state dir                 | 114    | 94                    |
+| Multi-file `-i matter-test.zap,three-endpoint-device.zap` | 114    | 94                    |
+| Multi-file with `--packageMatch fuzzy`                    | 47     | 0                     |
+| Multi-file with `--packageMatch strict`                   | 47     | 0                     |
+
+So **67 of the 114 reported errors are an artifact of how validate was invoked**, not of the file. The same file validated on its own reports 47.
+
+Impact:
+
+- The documented multi-file mode (`validate -i a.zap,b.zap`, `docs/validating-zap-files.md`) triggers this whenever the files span protocols.
+- Reusing one `--stateDirectory` across Matter and Zigbee runs triggers it too. The default state dir is shared (`~/.zap`), so this is the common case in scripts and CI.
+- Exit code is non-zero either way, so the inflated count is easy to miss.
+
+Workaround (not applied): pass `--packageMatch strict`, or validate one protocol per state directory.
+
+Note on scope: this does **not** explain the “Out of range” errors on the apps in this report. Those reproduce in-process with a single package and are caused by empty stored defaults (Bug 24). The two classes are independent.
+
 ## How to reproduce
 
 ```bash
@@ -880,3 +927,26 @@ node test/resource/fancy-apps/build-fancy-apps.js
 ```
 
 Outputs: `test/resource/fancy-apps/*.zap`, `generated/`, and this report.
+
+Bug 28 reproduces on stock fixtures, without this script:
+
+```bash
+# 47 errors
+node src-script/zap-start.js validate -i test/resource/three-endpoint-device.zap \
+  -z ./zcl-builtin/silabs/zcl.json -g ./test/gen-template/zigbee/gen-templates.json \
+  --stateDirectory /tmp/st-alone -o /tmp/alone.json
+
+# 114 errors, 94 of them "Attribute not found in endpoint configuration"
+node src-script/zap-start.js validate \
+  -i test/resource/matter-test.zap,test/resource/three-endpoint-device.zap \
+  -z ./zcl-builtin/matter/zcl.json -z ./zcl-builtin/silabs/zcl.json \
+  -g ./test/gen-template/matter/gen-test.json -g ./test/gen-template/zigbee/gen-templates.json \
+  --stateDirectory /tmp/st-multi -o /tmp/multi.json
+
+# back to 47 with explicit package matching
+node src-script/zap-start.js validate \
+  -i test/resource/matter-test.zap,test/resource/three-endpoint-device.zap \
+  -z ./zcl-builtin/matter/zcl.json -z ./zcl-builtin/silabs/zcl.json \
+  -g ./test/gen-template/matter/gen-test.json -g ./test/gen-template/zigbee/gen-templates.json \
+  --packageMatch strict --stateDirectory /tmp/st-strict -o /tmp/strict.json
+```
