@@ -40,8 +40,24 @@ describe('ZapConfig page functionality', () => {
   it('Should show radio buttons for session selection', () => {
     cy.url().then((url) => {
       if (url.includes('/config')) {
-        cy.contains('Generate New Session').should('be.visible')
-        cy.contains('Restore Unsaved Session').should('be.visible')
+        // Radios appear when unsaved sessions and/or recent .zap files exist
+        cy.get('body').then(($body) => {
+          if ($body.find('[data-cy="generate-new-session-radio"]').length > 0) {
+            cy.contains('Generate New Session').should('be.visible')
+            cy.get('body').then(($inner) => {
+              if ($inner.find('[data-cy="restore-session-radio"]').length > 0) {
+                cy.contains('Restore Unsaved Session').should('be.visible')
+              }
+              if ($inner.find('[data-cy="recent-zap-file-radio"]').length > 0) {
+                cy.contains('Open a recently used .zap file').should(
+                  'be.visible'
+                )
+              }
+            })
+          } else {
+            cy.log('No alternate session modes available on config page')
+          }
+        })
       } else {
         cy.log('Skipping - config page auto-submitted')
       }
@@ -51,12 +67,18 @@ describe('ZapConfig page functionality', () => {
   it('Should allow selecting Generate New Session option', () => {
     cy.url().then((url) => {
       if (url.includes('/config')) {
-        cy.dataCy('generate-new-session-radio')
-          .find('input[type="radio"]')
-          .check({ force: true })
-        cy.dataCy('generate-new-session-radio')
-          .find('input[type="radio"]')
-          .should('be.checked')
+        cy.get('body').then(($body) => {
+          if ($body.find('[data-cy="generate-new-session-radio"]').length > 0) {
+            cy.dataCy('generate-new-session-radio')
+              .find('input[type="radio"]')
+              .check({ force: true })
+            cy.dataCy('generate-new-session-radio')
+              .find('input[type="radio"]')
+              .should('be.checked')
+          } else {
+            cy.log('Skipping - generate session radio not present')
+          }
+        })
       } else {
         cy.log('Skipping - config page auto-submitted')
       }
@@ -66,12 +88,43 @@ describe('ZapConfig page functionality', () => {
   it('Should allow selecting Restore Unsaved Session option', () => {
     cy.url().then((url) => {
       if (url.includes('/config')) {
-        cy.dataCy('restore-session-radio')
-          .find('input[type="radio"]')
-          .check({ force: true })
-        cy.dataCy('restore-session-radio')
-          .find('input[type="radio"]')
-          .should('be.checked')
+        cy.get('body').then(($body) => {
+          if ($body.find('[data-cy="restore-session-radio"]').length > 0) {
+            cy.dataCy('restore-session-radio')
+              .find('input[type="radio"]')
+              .check({ force: true })
+            cy.dataCy('restore-session-radio')
+              .find('input[type="radio"]')
+              .should('be.checked')
+            cy.dataCy('unsaved-session-table').should('exist')
+            cy.dataCy('delete-all-sessions').should('be.visible')
+            cy.dataCy('delete-selected-sessions').should('be.visible')
+          } else {
+            cy.log('Skipping - restore session radio not present')
+          }
+        })
+      } else {
+        cy.log('Skipping - config page auto-submitted')
+      }
+    })
+  })
+
+  it('Should allow selecting recently used .zap file option', () => {
+    cy.url().then((url) => {
+      if (url.includes('/config')) {
+        cy.get('body').then(($body) => {
+          if ($body.find('[data-cy="recent-zap-file-radio"]').length > 0) {
+            cy.dataCy('recent-zap-file-radio')
+              .find('input[type="radio"]')
+              .check({ force: true })
+            cy.dataCy('recent-zap-file-radio')
+              .find('input[type="radio"]')
+              .should('be.checked')
+            cy.dataCy('recent-zap-file-table').should('exist')
+          } else {
+            cy.log('Skipping - recent zap file radio not present')
+          }
+        })
       } else {
         cy.log('Skipping - config page auto-submitted')
       }

@@ -51,6 +51,25 @@ limitations under the License.
         :input-attrs="{ 'data-cy': 'file-location-input' }"
       />
     </div>
+    <br />
+    <div class="row w-full items-center" data-cy="recent-lookback-row">
+      <div class="q-my-auto q-pr-sm">
+        Recently used .zap files lookback (days)
+      </div>
+      <q-input
+        dense
+        type="number"
+        min="1"
+        style="max-width: 8rem"
+        v-model.number="recentLookbackDays"
+        :input-attrs="{ 'data-cy': 'recent-lookback-input' }"
+      >
+        <q-tooltip>
+          How many days a .zap file stays in the recent list on the config page
+          (default 21)
+        </q-tooltip>
+      </q-input>
+    </div>
   </PreferencePageLayout>
 </template>
 <script>
@@ -58,6 +77,10 @@ import * as storage from '../../util/storage.js'
 import rendApi from '../../../src-shared/rend-api.js'
 const observable = require('../../util/observable.js')
 import PreferencePageLayout from '../../layouts/PreferencePageLayout.vue'
+import {
+  getRecentZapFilesLookbackDays,
+  setRecentZapFilesLookbackDays
+} from '../../util/recent-zap-files.js'
 
 export default {
   name: 'PreferenceUser',
@@ -66,7 +89,8 @@ export default {
   },
   data() {
     return {
-      localtheme: this.$q.dark.isActive
+      localtheme: this.$q.dark.isActive,
+      recentLookbackDays: getRecentZapFilesLookbackDays()
     }
   },
   methods: {
@@ -84,6 +108,9 @@ export default {
   watch: {
     localtheme(val) {
       window[rendApi.GLOBAL_SYMBOL_EXECUTE](rendApi.id.setDarkTheme, val)
+    },
+    recentLookbackDays(val) {
+      setRecentZapFilesLookbackDays(val)
     }
   },
   computed: {

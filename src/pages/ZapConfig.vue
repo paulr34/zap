@@ -24,7 +24,7 @@
             </div>
             <div class="row justify-center q-mt-md">
               <q-radio
-                v-if="loadPreSessionData.length"
+                v-if="showSessionModeRadios"
                 v-model="customConfig"
                 checked-icon="task_alt"
                 unchecked-icon="panorama_fish_eye"
@@ -41,6 +41,16 @@
                 val="load"
                 label="Restore Unsaved Session"
                 data-cy="restore-session-radio"
+              />
+              <q-radio
+                v-if="recentZapFiles.length"
+                v-model="customConfig"
+                checked-icon="task_alt"
+                class="q-ml-xl"
+                unchecked-icon="panorama_fish_eye"
+                val="recent"
+                label="Open a recently used .zap file"
+                data-cy="recent-zap-file-radio"
               />
             </div>
             <p class="text-center" v-if="isPackageSelected" style="color: red">
@@ -78,7 +88,13 @@
             <p class="text-center" v-else-if="customConfig === 'load'">
               These are sessions found in the database that were not saved into
               a .zap file. You can select them here, and continue the work with
-              the configuration.
+              the configuration. Use the checkboxes to delete sessions you no
+              longer need.
+            </p>
+            <p class="text-center" v-else-if="customConfig === 'recent'">
+              These .zap files were opened or saved recently (within the last
+              {{ recentLookbackDays }} days). Select one and submit to open it.
+              The lookback window is configurable in Preferences → User.
             </p>
 
             <template v-if="customConfig === 'select'">
@@ -345,16 +361,37 @@
                 </template>
               </q-table>
             </template>
-            <template v-else>
+            <template v-else-if="customConfig === 'load'">
               <q-table
                 title=""
                 :rows="loadPreSessionData"
                 :columns="loadPreSessionCol"
-                row-key="name"
+                row-key="id"
                 :pagination="pagination"
                 flat
                 :card-style="{ backgroundColor: 'transparent' }"
+                data-cy="unsaved-session-table"
               >
+                <template v-slot:top>
+                  <div class="row items-center full-width q-gutter-sm">
+                    <div class="col">Unsaved sessions</div>
+                    <q-btn
+                      color="negative"
+                      outline
+                      label="Delete selected"
+                      :disable="sessionsToDelete.length === 0"
+                      data-cy="delete-selected-sessions"
+                      @click="deleteSelectedSessions"
+                    />
+                    <q-btn
+                      color="negative"
+                      label="Delete all"
+                      :disable="loadPreSessionData.length === 0"
+                      data-cy="delete-all-sessions"
+                      @click="deleteAllSessions"
+                    />
+                  </div>
+                </template>
                 <template v-slot:header="props">
                   <q-tr :props="props">
                     <q-th
@@ -374,17 +411,82 @@
                         checked-icon="task_alt"
                         unchecked-icon="panorama_fish_eye"
                         :val="props.row"
+                        data-cy="restore-session-row-radio"
+                      />
+                    </q-td>
+                    <q-td key="delete" :props="props">
+                      <q-checkbox
+                        v-model="sessionsToDelete"
+                        :val="props.row.id"
+                        data-cy="delete-session-checkbox"
                       />
                     </q-td>
                     <q-td key="zclproperty" :props="props">
-                      <div>{{ props.row.zclProperty.description }}</div>
+                      <div>{{ props.row.zclProperty?.description }}</div>
                     </q-td>
                     <q-td key="gen template file" :props="props">
-                      <div>{{ props.row.genTemplateFile.version }}</div>
+                      <div>{{ props.row.genTemplateFile?.version }}</div>
                     </q-td>
                     <q-td key="creation time" :props="props">
                       <div>
                         {{ new Date(props.row.creationTime).toDateString() }}
+                      </div>
+                    </q-td>
+                  </q-tr>
+                </template>
+              </q-table>
+            </template>
+            <template v-else-if="customConfig === 'recent'">
+              <q-table
+                title="Recently used .zap files"
+                :rows="recentZapFiles"
+                :columns="recentZapFileCol"
+                row-key="path"
+                :pagination="pagination"
+                flat
+                :card-style="{ backgroundColor: 'transparent' }"
+                data-cy="recent-zap-file-table"
+              >
+                <template v-slot:header="props">
+                  <q-tr :props="props">
+                    <q-th
+                      v-for="col in props.cols"
+                      :key="col.name"
+                      :props="props"
+                    >
+                      {{ col.label }}
+                    </q-th>
+                  </q-tr>
+                </template>
+                <template v-slot:body="props">
+                  <q-tr
+                    :props="props"
+                    class="table_body cursor-pointer"
+                    @click="selectedRecentZapFile = props.row"
+                  >
+                    <q-td key="select" :props="props">
+                      <q-radio
+                        v-model="selectedRecentZapFile"
+                        checked-icon="task_alt"
+                        unchecked-icon="panorama_fish_eye"
+                        :val="props.row"
+                        data-cy="recent-zap-file-row-radio"
+                      />
+                    </q-td>
+                    <q-td key="name" :props="props">
+                      <div>{{ props.row.name }}</div>
+                    </q-td>
+                    <q-td key="path" :props="props">
+                      <div class="ellipsis" style="max-width: 40rem">
+                        {{ props.row.path }}
+                      </div>
+                      <q-tooltip :offset="[5, 5]">
+                        {{ props.row.path }}
+                      </q-tooltip>
+                    </q-td>
+                    <q-td key="lastOpened" :props="props">
+                      <div>
+                        {{ new Date(props.row.lastOpened).toLocaleString() }}
                       </div>
                     </q-td>
                   </q-tr>
@@ -413,6 +515,11 @@ import dbEnum from '../../src-shared/db-enum.js'
 import { QSpinnerGears } from 'quasar'
 import { setCssVar } from 'quasar'
 import CommonMixin from '../util/common-mixin'
+import {
+  getRecentZapFiles,
+  getRecentZapFilesLookbackDays,
+  recordRecentZapFile
+} from '../util/recent-zap-files.js'
 const generateNewSessionCol = [
   {
     name: 'select',
@@ -448,7 +555,12 @@ const generateNewSessionCol = [
 const loadPreSessionCol = [
   {
     name: 'select',
-    label: 'Session',
+    label: 'Restore',
+    align: 'center'
+  },
+  {
+    name: 'delete',
+    label: 'Delete',
     align: 'center'
   },
   {
@@ -467,6 +579,28 @@ const loadPreSessionCol = [
     align: 'left'
   }
 ]
+const recentZapFileCol = [
+  {
+    name: 'select',
+    label: '',
+    align: 'center'
+  },
+  {
+    name: 'name',
+    label: 'File',
+    align: 'left'
+  },
+  {
+    name: 'path',
+    label: 'Path',
+    align: 'left'
+  },
+  {
+    name: 'lastOpened',
+    label: 'Last used',
+    align: 'left'
+  }
+]
 
 export default {
   name: 'ZapConfig',
@@ -480,9 +614,14 @@ export default {
       selectedZclGenData: [],
       selectZclGenInfo: [],
       selectedZclSessionData: null,
+      selectedRecentZapFile: null,
+      sessionsToDelete: [],
+      recentZapFiles: getRecentZapFiles(),
+      recentLookbackDays: getRecentZapFilesLookbackDays(),
       zclPropertiesRow: [],
       newSessionCol: generateNewSessionCol,
       loadPreSessionCol: loadPreSessionCol,
+      recentZapFileCol: recentZapFileCol,
       zclGenRow: [],
       newConfig: false,
       path: window.location,
@@ -501,6 +640,11 @@ export default {
     }
   },
   computed: {
+    showSessionModeRadios: function () {
+      return (
+        this.loadPreSessionData.length > 0 || this.recentZapFiles.length > 0
+      )
+    },
     // Checks if atleast one zcl and template packages have been selected
     isPackageSelected: function () {
       if (this.customConfig === 'select')
@@ -508,21 +652,25 @@ export default {
           this.selectedZclPropertiesData.length == 0 ||
           this.selectedZclGenData.length == 0
         )
-      else return this.selectedZclSessionData == null
+      if (this.customConfig === 'load')
+        return this.selectedZclSessionData == null
+      if (this.customConfig === 'recent')
+        return this.selectedRecentZapFile == null
+      return false
     },
     // Checks if package selection is leading to a multi-protocol configuration
     isMultiProtocolConfiguration: function () {
+      if (this.customConfig !== 'select') {
+        this.$store.commit('zap/setMultiConfig', false)
+        return false
+      }
       let categorySet = []
       this.selectedZclPropertiesData.forEach((prop) => {
         if (!categorySet.includes(prop.category)) {
           categorySet.push(prop.category)
         }
       })
-      let result = false
-      result =
-        this.customConfig === 'select'
-          ? categorySet.length > 1
-          : this.selectedZclSessionData == null
+      let result = categorySet.length > 1
       this.$store.commit('zap/setMultiConfig', result)
       return result
     },
@@ -553,9 +701,8 @@ export default {
           }
         }
         return false
-      } else {
-        return this.selectedZclSessionData == null
       }
+      return false
     },
     isMultiplePackage: function () {
       return this.zclPropertiesRow.length > 1
@@ -591,7 +738,88 @@ export default {
       document.body.classList.remove('matter', 'zigbee', 'multiprotocol')
       document.body.classList.add(this.getuitheme)
     },
+    refreshRecentZapFiles() {
+      this.recentZapFiles = getRecentZapFiles()
+      this.recentLookbackDays = getRecentZapFilesLookbackDays()
+      if (
+        this.selectedRecentZapFile &&
+        !this.recentZapFiles.some(
+          (f) => f.path === this.selectedRecentZapFile.path
+        )
+      ) {
+        this.selectedRecentZapFile = null
+      }
+    },
+    openRecentZapFile(fileEntry) {
+      if (!fileEntry || !fileEntry.path) return
+      recordRecentZapFile(fileEntry.path)
+      const url = new URL(window.location.href)
+      url.searchParams.set('filePath', fileEntry.path)
+      window.location.assign(url.toString())
+    },
+    deleteSelectedSessions() {
+      if (this.sessionsToDelete.length === 0) return
+      this.$q
+        .dialog({
+          title: 'Delete unsaved sessions',
+          message: `Delete ${this.sessionsToDelete.length} selected unsaved session(s)? This cannot be undone.`,
+          cancel: true,
+          persistent: true
+        })
+        .onOk(() => {
+          this.$serverPost(restApi.uri.deleteDirtySessions, {
+            sessionIds: this.sessionsToDelete
+          }).then(() => {
+            this.removeSessionsFromUi(this.sessionsToDelete)
+            this.sessionsToDelete = []
+          })
+        })
+    },
+    deleteAllSessions() {
+      if (this.loadPreSessionData.length === 0) return
+      this.$q
+        .dialog({
+          title: 'Delete all unsaved sessions',
+          message: 'Delete ALL unsaved sessions? This cannot be undone.',
+          cancel: true,
+          persistent: true
+        })
+        .onOk(() => {
+          this.$serverPost(restApi.uri.deleteDirtySessions, {
+            all: true
+          }).then(() => {
+            this.loadPreSessionData = []
+            this.sessionsToDelete = []
+            this.selectedZclSessionData = null
+            if (this.customConfig === 'load') {
+              this.customConfig = 'select'
+            }
+          })
+        })
+    },
+    removeSessionsFromUi(sessionIds) {
+      const idSet = new Set(sessionIds.map((id) => String(id)))
+      this.loadPreSessionData = this.loadPreSessionData.filter(
+        (row) => !idSet.has(String(row.id))
+      )
+      if (
+        this.selectedZclSessionData &&
+        idSet.has(String(this.selectedZclSessionData.id))
+      ) {
+        this.selectedZclSessionData = null
+      }
+      if (
+        this.loadPreSessionData.length === 0 &&
+        this.customConfig === 'load'
+      ) {
+        this.customConfig = 'select'
+      }
+    },
     submitForm() {
+      if (this.customConfig === 'recent') {
+        this.openRecentZapFile(this.selectedRecentZapFile)
+        return
+      }
       if (this.customConfig === 'select') {
         let data = {
           zclProperties: this.selectedZclPropertiesData,
@@ -616,6 +844,9 @@ export default {
             selectedTemplatePackages: this.zclGenRow.filter((pkg) =>
               this.selectedZclGenData.includes(pkg.id)
             )
+          }
+          if (this.filePath) {
+            recordRecentZapFile(this.filePath)
           }
           this.$serverPost(restApi.uri.sessionCreate, data)
             .then(() => this.$serverPost(restApi.ide.open, openData))
@@ -702,6 +933,7 @@ export default {
     }
   },
   created() {
+    this.refreshRecentZapFiles()
     this.$serverPost(restApi.uri.sessionAttempt, this.path).then((result) => {
       this.zclPropertiesRow = result.data.zclProperties
       this.zclGenRow = result.data.zclGenTemplates
@@ -709,6 +941,10 @@ export default {
       this.open = result.data.open
       this.currentZapFilePackages = result.data.zapFilePackages
       this.zapFileExtensions = result.data.zapFileExtensions
+      if (this.filePath) {
+        recordRecentZapFile(this.filePath)
+        this.refreshRecentZapFiles()
+      }
       let currentZapFileZclPackages = []
       let currentTopLevelZapFilePackages = []
       let currentZapFileTemplatePackages = []

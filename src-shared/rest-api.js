@@ -84,6 +84,8 @@ const uri = {
   initializeSession: '/zcl/initializeSession',
   sessionCreate: '/zcl/sessionCreate',
   reloadSession: '/zcl/reloadSession',
+  deleteSession: '/zcl/session',
+  deleteDirtySessions: '/zcl/dirtySessions',
   init: '/init',
   forcedExternal: '/zcl/forcedExternal',
   loadComposition: '/zcl/loadComposition',

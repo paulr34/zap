@@ -23,6 +23,7 @@ const observable = require('../util/observable.js')
 const restApi = require('../../src-shared/rest-api.js')
 const rendApi = require('../../src-shared/rend-api.js')
 const storage = require('../util/storage.js')
+import { recordRecentZapFile } from '../util/recent-zap-files.js'
 
 // This file provide glue logic to enable function calls & HTML attribute data change listener logic
 // between front-end containers (jxBrowser, Electron, etc) and the node.js
@@ -55,6 +56,9 @@ export function renderer_api_info() {
 function fnSave(zap_file) {
   let data = {}
   if (zap_file != null) data.path = zap_file
+  if (zap_file != null) {
+    recordRecentZapFile(zap_file)
+  }
   window
     .serverPost(`${restApi.ide.save}`, data)
     .catch((err) => console.log(err))

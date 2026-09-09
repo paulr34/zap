@@ -435,10 +435,17 @@ This module provides Renderer API Exports.
 
 
 * [Renderer API: Renderer API.](#module_Renderer API_ Renderer API.)
+    * [.DEFAULT_RECENT_ZAP_FILES_LOOKBACK_DAYS](#module_Renderer API_ Renderer API..DEFAULT_RECENT_ZAP_FILES_LOOKBACK_DAYS)
     * [.GLOBAL_SYMBOL_INFO](#module_Renderer API_ Renderer API..GLOBAL_SYMBOL_INFO)
     * [.GLOBAL_SYMBOL_EXECUTE](#module_Renderer API_ Renderer API..GLOBAL_SYMBOL_EXECUTE)
     * [.GLOBAL_SYMBOL_NOTIFY](#module_Renderer API_ Renderer API..GLOBAL_SYMBOL_NOTIFY)
 
+<a name="module_Renderer API_ Renderer API..DEFAULT_RECENT_ZAP_FILES_LOOKBACK_DAYS"></a>
+
+### Renderer API: Renderer API..DEFAULT\_RECENT\_ZAP\_FILES\_LOOKBACK\_DAYS
+Default number of days to keep a .zap file in the recent list.
+
+**Kind**: static property of [<code>Renderer API: Renderer API.</code>](#module_Renderer API_ Renderer API.)  
 <a name="module_Renderer API_ Renderer API..GLOBAL_SYMBOL_INFO"></a>
 
 ### Renderer API: Renderer API..GLOBAL\_SYMBOL\_INFO
@@ -17468,6 +17475,8 @@ This module provides the REST API to the session initialization
     * [~initializeSession(db, options:)](#module_REST API_ initialization functions..initializeSession) ⇒
     * [~loadPreviousSessions(db)](#module_REST API_ initialization functions..loadPreviousSessions) ⇒
     * [~init(db)](#module_REST API_ initialization functions..init) ⇒
+    * [~deleteSession(db)](#module_REST API_ initialization functions..deleteSession) ⇒
+    * [~deleteDirtySessions(db)](#module_REST API_ initialization functions..deleteDirtySessions) ⇒
 
 <a name="module_REST API_ initialization functions..ensurePackageLoaded"></a>
 
@@ -17540,6 +17549,31 @@ Init function from the App.vue
 
 **Kind**: inner method of [<code>REST API: initialization functions</code>](#module_REST API_ initialization functions)  
 **Returns**: A success message.  
+
+| Param | Type |
+| --- | --- |
+| db | <code>\*</code> | 
+
+<a name="module_REST API_ initialization functions..deleteSession"></a>
+
+### REST API: initialization functions~deleteSession(db) ⇒
+Deletes one unsaved session by id.
+
+**Kind**: inner method of [<code>REST API: initialization functions</code>](#module_REST API_ initialization functions)  
+**Returns**: express handler  
+
+| Param | Type |
+| --- | --- |
+| db | <code>\*</code> | 
+
+<a name="module_REST API_ initialization functions..deleteDirtySessions"></a>
+
+### REST API: initialization functions~deleteDirtySessions(db) ⇒
+Deletes selected unsaved sessions, or all dirty sessions when all=true.
+Body: { sessionIds?: number[], all?: boolean }
+
+**Kind**: inner method of [<code>REST API: initialization functions</code>](#module_REST API_ initialization functions)  
+**Returns**: express handler  
 
 | Param | Type |
 | --- | --- |

@@ -376,12 +376,63 @@ function init(db) {
   }
 }
 
+/**
+ * Deletes one unsaved session by id.
+ * @param {*} db
+ * @returns express handler
+ */
+function deleteSession(db) {
+  return async (req, res) => {
+    let sessionId = req.query.sessionId
+    if (sessionId == null) {
+      return res.status(400).send({
+        message: 'Missing sessionId query parameter'
+      })
+    }
+    await querySession.deleteSession(db, sessionId)
+    return res.send({
+      message: 'Session deleted successfully',
+      sessionId
+    })
+  }
+}
+
+/**
+ * Deletes selected unsaved sessions, or all dirty sessions when all=true.
+ * Body: { sessionIds?: number[], all?: boolean }
+ * @param {*} db
+ * @returns express handler
+ */
+function deleteDirtySessions(db) {
+  return async (req, res) => {
+    if (req.body && req.body.all === true) {
+      await querySession.deleteAllDirtySessions(db)
+      return res.send({
+        message: 'All unsaved sessions deleted successfully'
+      })
+    }
+    let sessionIds = (req.body && req.body.sessionIds) || []
+    if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+      return res.status(400).send({
+        message: 'Provide sessionIds array or all=true'
+      })
+    }
+    await querySession.deleteSessions(db, sessionIds)
+    return res.send({
+      message: 'Selected unsaved sessions deleted successfully',
+      sessionIds
+    })
+  }
+}
+
 // Export individual functions for testing
 exports.sessionAttempt = sessionAttempt
 exports.sessionCreate = sessionCreate
 exports.initializeSession = initializeSession
 exports.loadPreviousSessions = loadPreviousSessions
 exports.init = init
+exports.deleteSession = deleteSession
+exports.deleteDirtySessions = deleteDirtySessions
 
 exports.post = [
   {
@@ -403,5 +454,16 @@ exports.post = [
   {
     uri: restApi.uri.sessionAttempt,
     callback: sessionAttempt
+  },
+  {
+    uri: restApi.uri.deleteDirtySessions,
+    callback: deleteDirtySessions
+  }
+]
+
+exports.delete = [
+  {
+    uri: restApi.uri.deleteSession,
+    callback: deleteSession
   }
 ]

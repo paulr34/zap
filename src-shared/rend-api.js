@@ -146,8 +146,13 @@ exports.observable = {
 exports.storageKey = {
   fileSave: 'lastFileLocation_openFileSave',
   theme: 'ui_theme',
-  isDarkThemeActive: 'isDarkThemeActive'
+  isDarkThemeActive: 'isDarkThemeActive',
+  recentZapFiles: 'recentZapFiles',
+  recentZapFilesLookbackDays: 'recentZapFilesLookbackDays'
 }
+
+/** Default number of days to keep a .zap file in the recent list. */
+exports.DEFAULT_RECENT_ZAP_FILES_LOOKBACK_DAYS = 21
 
 /** Global symbol that carries the API info metadata */
 exports.GLOBAL_SYMBOL_INFO = 'global_renderer_api_info'

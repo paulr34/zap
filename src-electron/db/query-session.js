@@ -687,6 +687,31 @@ async function deleteSession(db, sessionId) {
 }
 
 /**
+ * Deletes multiple sessions by id.
+ *
+ * @param {*} db
+ * @param {Array<number|string>} sessionIds
+ * @returns {Promise<number>} number of delete operations attempted
+ */
+async function deleteSessions(db, sessionIds) {
+  if (!sessionIds || sessionIds.length === 0) return 0
+  for (const sessionId of sessionIds) {
+    await deleteSession(db, sessionId)
+  }
+  return sessionIds.length
+}
+
+/**
+ * Deletes all dirty (unsaved) sessions.
+ *
+ * @param {*} db
+ * @returns {Promise<*>} result of the delete query
+ */
+async function deleteAllDirtySessions(db) {
+  return dbApi.dbRemove(db, 'DELETE FROM SESSION WHERE DIRTY = 1', [])
+}
+
+/**
  * Write logs to the session log.
  *
  * @param {*} db database connection
@@ -860,6 +885,8 @@ exports.ensureZapSessionId = ensureZapSessionId
 exports.ensureZapUserAndSession = ensureZapUserAndSession
 exports.createBlankSession = createBlankSession
 exports.deleteSession = deleteSession
+exports.deleteSessions = deleteSessions
+exports.deleteAllDirtySessions = deleteAllDirtySessions
 exports.writeLog = writeLog
 exports.readLog = readLog
 exports.updateSessionKeyValue = updateSessionKeyValue
