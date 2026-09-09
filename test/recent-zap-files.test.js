@@ -20,9 +20,13 @@
 import {
   getRecentZapFiles,
   getRecentZapFilesLookbackDays,
+  isZapFilePath,
+  mergeRecentZapFilesFromServer,
+  normalizeZapPath,
   recordRecentZapFile,
   removeRecentZapFile,
-  setRecentZapFilesLookbackDays
+  setRecentZapFilesLookbackDays,
+  zapPathKey
 } from '../src/util/recent-zap-files.js'
 import rendApi from '../src-shared/rend-api.js'
 import { timeout } from './test-util'
@@ -44,6 +48,32 @@ test(
 )
 
 test(
+  'only real .zap extensions are accepted',
+  () => {
+    expect(isZapFilePath('/tmp/a.zap')).toBe(true)
+    expect(isZapFilePath('/tmp/a.ZAP')).toBe(true)
+    expect(isZapFilePath('/tmp/a.zap.bak')).toBe(false)
+    expect(isZapFilePath('/tmp/readme.txt')).toBe(false)
+    recordRecentZapFile('/tmp/readme.txt')
+    recordRecentZapFile('/tmp/a.zap.bak')
+    expect(getRecentZapFiles().length).toBe(0)
+  },
+  timeout.short()
+)
+
+test(
+  'normalizes and dedupes path variants',
+  () => {
+    expect(normalizeZapPath('C:\\foo\\bar.zap')).toBe('C:/foo/bar.zap')
+    expect(zapPathKey('C:\\Foo\\Bar.zap')).toBe(zapPathKey('c:/foo/bar.zap'))
+    recordRecentZapFile('C:\\Foo\\Bar.zap')
+    recordRecentZapFile('c:/foo/bar.zap')
+    expect(getRecentZapFiles().length).toBe(1)
+  },
+  timeout.short()
+)
+
+test(
   'record and filter recent zap files by lookback',
   () => {
     recordRecentZapFile('/tmp/a.zap')
@@ -53,7 +83,6 @@ test(
     expect(files[0].path).toBe('/tmp/b.zap')
     expect(files[0].name).toBe('b.zap')
 
-    // Move first entry outside lookback window
     setRecentZapFilesLookbackDays(1)
     let stored = JSON.parse(
       window.localStorage.getItem(rendApi.storageKey.recentZapFiles)
@@ -74,10 +103,19 @@ test(
 )
 
 test(
-  'ignores non-zap paths',
+  'merges server/DB entries for cold start',
   () => {
-    recordRecentZapFile('/tmp/readme.txt')
-    expect(getRecentZapFiles().length).toBe(0)
+    window.localStorage.setItem(
+      rendApi.storageKey.fileSave,
+      '/tmp/last-pref.zap'
+    )
+    mergeRecentZapFilesFromServer([
+      { path: '/tmp/from-db.zap', lastOpened: Date.now() - 1000 }
+    ])
+    let files = getRecentZapFiles()
+    let paths = files.map((f) => f.path)
+    expect(paths).toContain('/tmp/from-db.zap')
+    expect(paths).toContain('/tmp/last-pref.zap')
   },
   timeout.short()
 )

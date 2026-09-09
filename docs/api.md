@@ -404,6 +404,24 @@ things were successful or not.</p>
 </dd>
 </dl>
 
+## Constants
+
+<dl>
+<dt><a href="#fs">fs</a></dt>
+<dd><p>Copyright (c) 2026 Silicon Labs</p>
+<p>   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at</p>
+<pre><code>   http://www.apache.org/licenses/LICENSE-2.0
+</code></pre>
+<p>   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.</p>
+</dd>
+</dl>
+
 ## Functions
 
 <dl>
@@ -415,6 +433,21 @@ things were successful or not.</p>
 </dd>
 <dt><a href="#isEmojiDisabled">isEmojiDisabled()</a> ⇒ <code>boolean</code></dt>
 <dd><p>Check if emojis should be disabled</p>
+</dd>
+<dt><a href="#isZapFilePath">isZapFilePath(filePath)</a> ⇒ <code>boolean</code></dt>
+<dd><p>True if the path looks like a .zap file (extension only).</p>
+</dd>
+<dt><a href="#normalizeZapPath">normalizeZapPath(filePath)</a> ⇒ <code>string</code></dt>
+<dd><p>Normalize a .zap path for stable comparison / storage.</p>
+</dd>
+<dt><a href="#zapPathKey">zapPathKey(filePath)</a> ⇒ <code>string</code></dt>
+<dd><p>Deduping key that is case-insensitive on win32/darwin.</p>
+</dd>
+<dt><a href="#zapFileExists">zapFileExists(filePath)</a> ⇒ <code>boolean</code></dt>
+<dd><p>Returns true if path exists and is a regular file.</p>
+</dd>
+<dt><a href="#filterExistingRecentZapFiles">filterExistingRecentZapFiles(entries)</a> ⇒ <code>Array.&lt;{path: string, lastOpened: number}&gt;</code></dt>
+<dd><p>Filter/dedupe recent file entries to existing .zap files.</p>
 </dd>
 </dl>
 
@@ -17470,6 +17503,7 @@ This module provides the REST API to the session initialization
 
 * [REST API: initialization functions](#module_REST API_ initialization functions)
     * [~ensurePackageLoaded(db, packagePath, packageType)](#module_REST API_ initialization functions..ensurePackageLoaded) ⇒ <code>Promise.&lt;(Object\|null)&gt;</code>
+    * [~withRecentZapFiles(db, payload)](#module_REST API_ initialization functions..withRecentZapFiles) ⇒ <code>Promise.&lt;object&gt;</code>
     * [~sessionAttempt(db)](#module_REST API_ initialization functions..sessionAttempt) ⇒
     * [~sessionCreate(db)](#module_REST API_ initialization functions..sessionCreate) ⇒
     * [~initializeSession(db, options:)](#module_REST API_ initialization functions..initializeSession) ⇒
@@ -17491,6 +17525,18 @@ Helper function to check if a package exists in database and load it if not
 | db | <code>\*</code> | Database connection |
 | packagePath | <code>string</code> | Path to the package file |
 | packageType | <code>string</code> | Type of package (zclProperties or genTemplatesJson) |
+
+<a name="module_REST API_ initialization functions..withRecentZapFiles"></a>
+
+### REST API: initialization functions~withRecentZapFiles(db, payload) ⇒ <code>Promise.&lt;object&gt;</code>
+Attach recent existing .zap files (from DB) onto a sessionAttempt payload.
+
+**Kind**: inner method of [<code>REST API: initialization functions</code>](#module_REST API_ initialization functions)  
+
+| Param | Type |
+| --- | --- |
+| db | <code>\*</code> | 
+| payload | <code>object</code> | 
 
 <a name="module_REST API_ initialization functions..sessionAttempt"></a>
 
@@ -30445,6 +30491,24 @@ Promises to perform a post loading step.
 | db | <code>\*</code> | 
 | packageIds | <code>\*</code> | 
 
+<a name="fs"></a>
+
+## fs
+Copyright (c) 2026 Silicon Labs
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+**Kind**: global constant  
 <a name="setEmojiDisabled"></a>
 
 ## setEmojiDisabled(value)
@@ -30469,3 +30533,58 @@ Check if emojis should be disabled
 
 **Kind**: global function  
 **Returns**: <code>boolean</code> - true if emojis should be disabled  
+<a name="isZapFilePath"></a>
+
+## isZapFilePath(filePath) ⇒ <code>boolean</code>
+True if the path looks like a .zap file (extension only).
+
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| filePath | <code>string</code> | 
+
+<a name="normalizeZapPath"></a>
+
+## normalizeZapPath(filePath) ⇒ <code>string</code>
+Normalize a .zap path for stable comparison / storage.
+
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| filePath | <code>string</code> | 
+
+<a name="zapPathKey"></a>
+
+## zapPathKey(filePath) ⇒ <code>string</code>
+Deduping key that is case-insensitive on win32/darwin.
+
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| filePath | <code>string</code> | 
+
+<a name="zapFileExists"></a>
+
+## zapFileExists(filePath) ⇒ <code>boolean</code>
+Returns true if path exists and is a regular file.
+
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| filePath | <code>string</code> | 
+
+<a name="filterExistingRecentZapFiles"></a>
+
+## filterExistingRecentZapFiles(entries) ⇒ <code>Array.&lt;{path: string, lastOpened: number}&gt;</code>
+Filter/dedupe recent file entries to existing .zap files.
+
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| entries | <code>Array.&lt;{path: string, lastOpened: number}&gt;</code> | 
+

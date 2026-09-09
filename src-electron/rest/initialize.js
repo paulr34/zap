@@ -26,6 +26,8 @@ const querySession = require('../db/query-session.js')
 const dbEnum = require('../../src-shared/db-enum.js')
 const restApi = require('../../src-shared/rest-api.js')
 const util = require('../util/util.js')
+const env = require('../util/env')
+const recentZapFilesUtil = require('../util/recent-zap-files.js')
 const fs = require('fs')
 const fsp = fs.promises
 const path = require('path')
@@ -80,6 +82,24 @@ async function ensurePackageLoaded(db, packagePath, packageType) {
     env.logWarning(`Failed to load package ${packagePath}: ${error.message}`)
     return null
   }
+}
+
+/**
+ * Attach recent existing .zap files (from DB) onto a sessionAttempt payload.
+ * @param {*} db
+ * @param {object} payload
+ * @returns {Promise<object>}
+ */
+async function withRecentZapFiles(db, payload) {
+  try {
+    let fromDb = await querySession.getRecentZapFilePaths(db)
+    payload.recentZapFiles =
+      recentZapFilesUtil.filterExistingRecentZapFiles(fromDb)
+  } catch (e) {
+    env.logWarning(`Failed to load recent zap files: ${e.message}`)
+    payload.recentZapFiles = []
+  }
+  return payload
 }
 
 /**
@@ -167,15 +187,17 @@ function sessionAttempt(db) {
           }
 
           const sessions = await querySession.getDirtySessionsWithPackages(db)
-          return res.send({
-            zclGenTemplates,
-            zclProperties,
-            sessions,
-            filePath,
-            zapFilePackages,
-            open,
-            filePathExtension
-          })
+          return res.send(
+            await withRecentZapFiles(db, {
+              zclGenTemplates,
+              zclProperties,
+              sessions,
+              filePath,
+              zapFilePackages,
+              open,
+              filePathExtension
+            })
+          )
         }
 
         if (category.length > 0) {
@@ -192,15 +214,17 @@ function sessionAttempt(db) {
               category
             )
           const sessions = await querySession.getDirtySessionsWithPackages(db)
-          return res.send({
-            zclGenTemplates,
-            zclProperties,
-            sessions,
-            filePath,
-            zapFilePackages,
-            open,
-            filePathExtension
-          })
+          return res.send(
+            await withRecentZapFiles(db, {
+              zclGenTemplates,
+              zclProperties,
+              sessions,
+              filePath,
+              zapFilePackages,
+              open,
+              filePathExtension
+            })
+          )
         } else {
           let open = true
           const zclProperties = await queryPackage.getPackagesByType(
@@ -212,12 +236,14 @@ function sessionAttempt(db) {
             dbEnum.packageType.genTemplatesJson
           )
           const sessions = await querySession.getDirtySessionsWithPackages(db)
-          return res.send({
-            zclGenTemplates,
-            zclProperties,
-            sessions,
-            open
-          })
+          return res.send(
+            await withRecentZapFiles(db, {
+              zclGenTemplates,
+              zclProperties,
+              sessions,
+              open
+            })
+          )
         }
       } else {
         let open = true
@@ -230,12 +256,14 @@ function sessionAttempt(db) {
           dbEnum.packageType.genTemplatesJson
         )
         const sessions = await querySession.getDirtySessionsWithPackages(db)
-        return res.send({
-          zclGenTemplates,
-          zclProperties,
-          sessions,
-          open
-        })
+        return res.send(
+          await withRecentZapFiles(db, {
+            zclGenTemplates,
+            zclProperties,
+            sessions,
+            open
+          })
+        )
       }
     } else {
       let open = false
@@ -248,12 +276,14 @@ function sessionAttempt(db) {
         dbEnum.packageType.genTemplatesJson
       )
       const sessions = await querySession.getDirtySessionsWithPackages(db)
-      return res.send({
-        zclGenTemplates,
-        zclProperties,
-        sessions,
-        open
-      })
+      return res.send(
+        await withRecentZapFiles(db, {
+          zclGenTemplates,
+          zclProperties,
+          sessions,
+          open
+        })
+      )
     }
   }
 }
@@ -417,7 +447,7 @@ function deleteDirtySessions(db) {
         message: 'Provide sessionIds array or all=true'
       })
     }
-    await querySession.deleteSessions(db, sessionIds)
+    await querySession.deleteDirtySessionsById(db, sessionIds)
     return res.send({
       message: 'Selected unsaved sessions deleted successfully',
       sessionIds

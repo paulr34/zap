@@ -687,16 +687,31 @@ async function deleteSession(db, sessionId) {
 }
 
 /**
- * Deletes multiple sessions by id.
+ * Deletes a session only if it is dirty/unsaved.
+ *
+ * @param {*} db
+ * @param {*} sessionId
+ * @returns {Promise<*>}
+ */
+async function deleteDirtySession(db, sessionId) {
+  return dbApi.dbRemove(
+    db,
+    'DELETE FROM SESSION WHERE SESSION_ID = ? AND DIRTY = 1',
+    [sessionId]
+  )
+}
+
+/**
+ * Deletes multiple dirty sessions by id.
  *
  * @param {*} db
  * @param {Array<number|string>} sessionIds
  * @returns {Promise<number>} number of delete operations attempted
  */
-async function deleteSessions(db, sessionIds) {
+async function deleteDirtySessionsById(db, sessionIds) {
   if (!sessionIds || sessionIds.length === 0) return 0
   for (const sessionId of sessionIds) {
-    await deleteSession(db, sessionId)
+    await deleteDirtySession(db, sessionId)
   }
   return sessionIds.length
 }
@@ -709,6 +724,45 @@ async function deleteSessions(db, sessionIds) {
  */
 async function deleteAllDirtySessions(db) {
   return dbApi.dbRemove(db, 'DELETE FROM SESSION WHERE DIRTY = 1', [])
+}
+
+/**
+ * Returns distinct .zap file paths previously associated with sessions,
+ * newest first. Existence on disk is not checked here.
+ *
+ * @param {*} db
+ * @returns {Promise<Array<{path: string, lastOpened: number}>>}
+ */
+async function getRecentZapFilePaths(db) {
+  let rows = await dbApi.dbAll(
+    db,
+    `
+SELECT
+  SESSION_KEY_VALUE.VALUE AS FILE_PATH,
+  MAX(SESSION.CREATION_TIME) AS LAST_OPENED
+FROM
+  SESSION_KEY_VALUE
+INNER JOIN
+  SESSION
+ON
+  SESSION.SESSION_ID = SESSION_KEY_VALUE.SESSION_REF
+WHERE
+  SESSION_KEY_VALUE.KEY = ?
+  AND SESSION_KEY_VALUE.VALUE IS NOT NULL
+  AND LENGTH(TRIM(SESSION_KEY_VALUE.VALUE)) > 0
+GROUP BY
+  SESSION_KEY_VALUE.VALUE
+ORDER BY
+  LAST_OPENED DESC
+`,
+    ['filePath']
+  )
+  return rows
+    .map((row) => ({
+      path: row.FILE_PATH,
+      lastOpened: row.LAST_OPENED
+    }))
+    .filter((entry) => entry.path)
 }
 
 /**
@@ -885,8 +939,10 @@ exports.ensureZapSessionId = ensureZapSessionId
 exports.ensureZapUserAndSession = ensureZapUserAndSession
 exports.createBlankSession = createBlankSession
 exports.deleteSession = deleteSession
-exports.deleteSessions = deleteSessions
+exports.deleteDirtySession = deleteDirtySession
+exports.deleteDirtySessionsById = deleteDirtySessionsById
 exports.deleteAllDirtySessions = deleteAllDirtySessions
+exports.getRecentZapFilePaths = getRecentZapFilePaths
 exports.writeLog = writeLog
 exports.readLog = readLog
 exports.updateSessionKeyValue = updateSessionKeyValue

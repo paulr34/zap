@@ -31,6 +31,7 @@ const querySession = require('../db/query-session.js')
 const queryNotification = require('../db/query-session-notification.js')
 const dbEnum = require('../../src-shared/db-enum.js')
 const studio = require('../ide-integration/studio-rest-api')
+const recentZapFilesUtil = require('../util/recent-zap-files.js')
 import { projectName } from '../util/studio-util'
 
 /**
@@ -238,6 +239,50 @@ function httpGetFileIsDirty(db) {
   }
 }
 
+/**
+ * HTTP GET: recent .zap files known to the DB that still exist on disk.
+ * @param {*} db
+ * @returns express handler
+ */
+function httpGetRecentZapFiles(db) {
+  return async (req, res) => {
+    try {
+      let fromDb = await querySession.getRecentZapFilePaths(db)
+      let recentZapFiles =
+        recentZapFilesUtil.filterExistingRecentZapFiles(fromDb)
+      return res.status(StatusCodes.OK).send({ recentZapFiles })
+    } catch (e) {
+      env.logWarning(`Failed to get recent zap files: ${e.message}`)
+      return res.status(StatusCodes.OK).send({ recentZapFiles: [] })
+    }
+  }
+}
+
+/**
+ * HTTP POST: filter client-side recent paths to ones that still exist.
+ * Body: { paths: string[] } or { entries: [{path, lastOpened}] }
+ * @param {*} db
+ * @returns express handler
+ */
+function httpPostFilterExistingZapFiles(db) {
+  return async (req, res) => {
+    let entries = []
+    if (Array.isArray(req.body?.entries)) {
+      entries = req.body.entries
+    } else if (Array.isArray(req.body?.paths)) {
+      entries = req.body.paths.map((p) => ({ path: p, lastOpened: 0 }))
+    }
+    let existing = recentZapFilesUtil.filterExistingRecentZapFiles(entries)
+    let existingKeys = new Set(
+      existing.map((e) => recentZapFilesUtil.zapPathKey(e.path))
+    )
+    let missing = entries
+      .map((e) => (typeof e === 'string' ? e : e?.path))
+      .filter((p) => p && !existingKeys.has(recentZapFilesUtil.zapPathKey(p)))
+    return res.status(StatusCodes.OK).send({ existing, missing })
+  }
+}
+
 exports.post = [
   {
     uri: restApi.ide.open,
@@ -246,6 +291,10 @@ exports.post = [
   {
     uri: restApi.ide.save,
     callback: httpPostFileSave
+  },
+  {
+    uri: restApi.uri.filterExistingZapFiles,
+    callback: httpPostFilterExistingZapFiles
   }
 ]
 
@@ -253,5 +302,9 @@ exports.get = [
   {
     uri: restApi.ide.isDirty,
     callback: httpGetFileIsDirty
+  },
+  {
+    uri: restApi.uri.recentZapFiles,
+    callback: httpGetRecentZapFiles
   }
 ]

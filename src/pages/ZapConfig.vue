@@ -447,6 +447,22 @@
                 :card-style="{ backgroundColor: 'transparent' }"
                 data-cy="recent-zap-file-table"
               >
+                <template v-slot:top>
+                  <div class="row items-center full-width q-gutter-sm">
+                    <div class="col q-table__title">
+                      Recently used .zap files
+                    </div>
+                    <q-btn
+                      flat
+                      dense
+                      color="primary"
+                      icon="refresh"
+                      label="Refresh"
+                      data-cy="refresh-recent-zap-files"
+                      @click="refreshRecentZapFilesFromServer"
+                    />
+                  </div>
+                </template>
                 <template v-slot:header="props">
                   <q-tr :props="props">
                     <q-th
@@ -489,7 +505,25 @@
                         {{ new Date(props.row.lastOpened).toLocaleString() }}
                       </div>
                     </q-td>
+                    <q-td key="actions" :props="props">
+                      <q-btn
+                        flat
+                        dense
+                        round
+                        color="negative"
+                        icon="delete"
+                        data-cy="remove-recent-zap-file"
+                        @click.stop="removeRecentFile(props.row)"
+                      >
+                        <q-tooltip>Remove from recent list</q-tooltip>
+                      </q-btn>
+                    </q-td>
                   </q-tr>
+                </template>
+                <template v-slot:no-data>
+                  <div class="full-width row flex-center q-pa-md text-grey">
+                    No recent .zap files found that still exist on disk.
+                  </div>
                 </template>
               </q-table>
             </template>
@@ -518,7 +552,11 @@ import CommonMixin from '../util/common-mixin'
 import {
   getRecentZapFiles,
   getRecentZapFilesLookbackDays,
-  recordRecentZapFile
+  recordRecentZapFile,
+  removeRecentZapFile,
+  mergeRecentZapFilesFromServer,
+  retainExistingRecentZapFiles,
+  RECENT_ZAP_FILES_CHANGED_EVENT
 } from '../util/recent-zap-files.js'
 const generateNewSessionCol = [
   {
@@ -599,6 +637,11 @@ const recentZapFileCol = [
     name: 'lastOpened',
     label: 'Last used',
     align: 'left'
+  },
+  {
+    name: 'actions',
+    label: '',
+    align: 'center'
   }
 ]
 
@@ -731,7 +774,25 @@ export default {
       this.selectZclGenInfo = this.zclGenRow.filter((zgr) =>
         this.selectedZclGenData.includes(zgr.id)
       )
+    },
+    customConfig(val) {
+      if (val === 'recent') {
+        this.refreshRecentZapFiles()
+      }
     }
+  },
+  mounted() {
+    this._onRecentZapFilesChanged = () => this.refreshRecentZapFiles()
+    window.addEventListener(
+      RECENT_ZAP_FILES_CHANGED_EVENT,
+      this._onRecentZapFilesChanged
+    )
+  },
+  beforeUnmount() {
+    window.removeEventListener(
+      RECENT_ZAP_FILES_CHANGED_EVENT,
+      this._onRecentZapFilesChanged
+    )
   },
   methods: {
     addClassToBody() {
@@ -750,12 +811,77 @@ export default {
         this.selectedRecentZapFile = null
       }
     },
-    openRecentZapFile(fileEntry) {
+    async pruneMissingRecentZapFiles() {
+      let local = getRecentZapFiles()
+      if (local.length === 0) {
+        this.refreshRecentZapFiles()
+        return
+      }
+      try {
+        let result = await this.$serverPost(
+          restApi.uri.filterExistingZapFiles,
+          { entries: local }
+        )
+        if (result?.data?.existing) {
+          this.recentZapFiles = retainExistingRecentZapFiles(
+            result.data.existing
+          )
+          this.recentLookbackDays = getRecentZapFilesLookbackDays()
+        } else {
+          this.refreshRecentZapFiles()
+        }
+      } catch (e) {
+        this.refreshRecentZapFiles()
+      }
+    },
+    async refreshRecentZapFilesFromServer() {
+      try {
+        let result = await this.$serverGet(restApi.uri.recentZapFiles)
+        mergeRecentZapFilesFromServer(result?.data?.recentZapFiles || [])
+        await this.pruneMissingRecentZapFiles()
+      } catch (e) {
+        this.refreshRecentZapFiles()
+      }
+    },
+    seedRecentZapFiles(serverEntries) {
+      mergeRecentZapFilesFromServer(serverEntries || [])
+      return this.pruneMissingRecentZapFiles()
+    },
+    removeRecentFile(fileEntry) {
+      if (!fileEntry) return
+      removeRecentZapFile(fileEntry.path)
+      this.refreshRecentZapFiles()
+    },
+    async openRecentZapFile(fileEntry) {
       if (!fileEntry || !fileEntry.path) return
-      recordRecentZapFile(fileEntry.path)
-      const url = new URL(window.location.href)
-      url.searchParams.set('filePath', fileEntry.path)
-      window.location.assign(url.toString())
+      try {
+        let result = await this.$serverPost(
+          restApi.uri.filterExistingZapFiles,
+          { paths: [fileEntry.path] }
+        )
+        let existing = result?.data?.existing || []
+        if (existing.length === 0) {
+          removeRecentZapFile(fileEntry.path)
+          this.refreshRecentZapFiles()
+          this.$q.notify({
+            type: 'warning',
+            message: `File no longer exists: ${fileEntry.path}`,
+            position: 'top'
+          })
+          return
+        }
+        let pathToOpen = existing[0].path || fileEntry.path
+        recordRecentZapFile(pathToOpen)
+        const url = new URL(window.location.href)
+        url.searchParams.set('filePath', pathToOpen)
+        window.location.assign(url.toString())
+      } catch (e) {
+        this.$q.notify({
+          type: 'negative',
+          message: `Unable to open recent file: ${fileEntry.path}`,
+          position: 'top'
+        })
+      }
     },
     deleteSelectedSessions() {
       if (this.sessionsToDelete.length === 0) return
@@ -941,6 +1067,7 @@ export default {
       this.open = result.data.open
       this.currentZapFilePackages = result.data.zapFilePackages
       this.zapFileExtensions = result.data.zapFileExtensions
+      this.seedRecentZapFiles(result.data.recentZapFiles)
       if (this.filePath) {
         recordRecentZapFile(this.filePath)
         this.refreshRecentZapFiles()
