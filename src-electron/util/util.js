@@ -49,6 +49,102 @@ function checksum(data) {
 }
 
 /**
+ * Collects file paths out of a value that can be a single path, an array of
+ * paths, a package object containing a `path` key, or an array of such
+ * objects. Anything that does not carry a path, such as a package id, is
+ * ignored. This is needed because metafile arguments reach us in all those
+ * shapes: the command line arguments are arrays, the REST API sends package
+ * objects and the internal callers pass single strings.
+ *
+ * @param {*} value
+ * @returns array of paths, empty if none were found.
+ */
+function collectPackagePaths(value) {
+  let paths = []
+  let collect = (v) => {
+    if (v == null) {
+      return
+    } else if (typeof v === 'string') {
+      if (v.length > 0) paths.push(v)
+    } else if (Array.isArray(v)) {
+      v.forEach(collect)
+    } else if (typeof v === 'object' && typeof v.path === 'string') {
+      paths.push(v.path)
+    }
+  }
+  collect(value)
+  return paths
+}
+
+/**
+ * Compares two file system paths. Both paths are resolved first, so that
+ * relative paths and mixed path separators don't matter, and the comparison
+ * is case insensitive on platforms with case insensitive file systems.
+ *
+ * @param {*} path1
+ * @param {*} path2
+ * @returns true if both paths point to the same location.
+ */
+function pathsMatch(path1, path2) {
+  if (typeof path1 !== 'string' || typeof path2 !== 'string') return false
+  let resolved1 = path.resolve(path1)
+  let resolved2 = path.resolve(path2)
+  if (process.platform === 'win32' || process.platform === 'darwin') {
+    return resolved1.toLowerCase() === resolved2.toLowerCase()
+  }
+  return resolved1 === resolved2
+}
+
+/**
+ * Finds the first package out of `packages` whose path matches any of the
+ * given `candidatePaths`. Candidates are honored in the order they were
+ * given, so the first candidate that resolves to a loaded package wins.
+ *
+ * @param {*} packages array of packages, each containing a `path`
+ * @param {*} candidatePaths array of paths
+ * @returns matching package or null if there is no match.
+ */
+function findPackageByPaths(packages, candidatePaths) {
+  for (let candidate of candidatePaths) {
+    let match = packages.find((p) => pathsMatch(candidate, p.path))
+    if (match != null) return match
+  }
+  return null
+}
+
+/**
+ * Returns the session partition id for a given one based partition number,
+ * creating the partition when the session does not have it yet. Sessions are
+ * created with a partition count that is guessed up front, so the partition
+ * a package has to go into may not exist.
+ *
+ * @param {*} db
+ * @param {*} sessionId
+ * @param {*} partitionNumber
+ * @returns session partition id.
+ */
+async function ensureSessionPartitionId(db, sessionId, partitionNumber) {
+  let partitions = await querySession.getAllSessionPartitionInfoForSession(
+    db,
+    sessionId
+  )
+  let partition = partitions.find(
+    (p) => p.sessionPartitionNumber == partitionNumber
+  )
+  if (partition == null) {
+    await querySession.insertSessionPartition(db, sessionId, partitionNumber)
+    partitions = await querySession.getAllSessionPartitionInfoForSession(
+      db,
+      sessionId
+    )
+    partition = partitions.find(
+      (p) => p.sessionPartitionNumber == partitionNumber
+    )
+  }
+  return partition?.sessionPartitionId
+}
+
+/**
  * This function assigns a proper package ID to the session if there
  * are no packages present. It will also populate session options.
  *
@@ -67,16 +163,12 @@ async function ensurePackagesAndPopulateSessionOptions(
   selectedGenTemplatePackages = []
 ) {
   let promises = []
-  // This is the desired ZCL properties file. Because it is possible
-  // that an array is passed from the command line, we are simply taking
-  // the first one, if we pass multiple ones.
-  let zclFile
-  if (options) {
-    zclFile = options.zcl
-  } else {
-    zclFile = selectedZclPropertyPackage.path
-      ? selectedZclPropertyPackage.path
-      : selectedZclPropertyPackage[0].path
+  // These are the desired ZCL metafiles. Multiple ones can be requested, for
+  // example when the command line carries one metafile per data model, so all
+  // of them are kept and used in the order they were given.
+  let requestedZclPaths = collectPackagePaths(options?.zcl)
+  if (requestedZclPaths.length == 0) {
+    requestedZclPaths = collectPackagePaths(selectedZclPropertyPackage)
   }
   // 0. Read current packages.
   let currentPackages =
@@ -94,8 +186,6 @@ async function ensurePackagesAndPopulateSessionOptions(
 
   // 1. Associate a zclProperties file.
   let sessionPartitionIndex = 0
-  let sessionPartitionInfo =
-    await querySession.getAllSessionPartitionInfoForSession(db, sessionId)
   if (!hasZclPackage) {
     if (selectedZclPropertyPackage && selectedZclPropertyPackage.length > 1) {
       console.log(
@@ -103,18 +193,23 @@ async function ensurePackagesAndPopulateSessionOptions(
           JSON.stringify(selectedZclPropertyPackage)
       )
       for (let i = 0; i < selectedZclPropertyPackage.length; i++) {
+        sessionPartitionIndex++
+        let sessionPartitionId = await ensureSessionPartitionId(
+          db,
+          sessionId,
+          sessionPartitionIndex
+        )
         promises.push(
           queryPackage.insertSessionPackage(
             db,
-            sessionPartitionInfo[sessionPartitionIndex].sessionPartitionId,
+            sessionPartitionId,
             selectedZclPropertyPackage[i].id,
             true
           )
         )
-        sessionPartitionIndex++
       }
     } else if (
-      options.upgradeZclPackages &&
+      options?.upgradeZclPackages &&
       options.upgradeZclPackages.length > 0
     ) {
       for (let i = 0; i < options.upgradeZclPackages.length; i++) {
@@ -132,83 +227,76 @@ async function ensurePackagesAndPopulateSessionOptions(
         )
       }
     } else {
-      let zclPropertiesPromise = queryPackage
-        .getPackagesByType(db, dbEnum.packageType.zclProperties)
-        .then((rows) => {
-          let packageId
-          if (
-            selectedZclPropertyPackage &&
-            selectedZclPropertyPackage.length > 0
-          ) {
-            packageId = selectedZclPropertyPackage[0].id
-          } else if (rows.length == 1) {
-            packageId = rows[0].id
-            env.logDebug(
-              `Single zcl.properties found, using it for the session: ${packageId}`
-            )
-          } else if (rows.length == 0) {
-            env.logError(`No zcl.properties found for session.`)
-            queryNotification.setNotification(
-              db,
-              'WARNING',
-              `No zcl.properties found for session.`,
-              sessionId,
-              2,
-              0
-            )
-            packageId = null
-          } else {
-            rows.forEach((p) => {
-              // If no zcl file is selected then pick the first one available
-              if (!zclFile) {
-                zclFile = p.path
-              }
-              if (path.resolve(zclFile) === p.path) {
-                packageId = p.id
-              }
-            })
-            env.logWarning(
-              `${sessionId}, ${zclFile}: Multiple toplevel zcl.properties found. Using the first one from args: ${packageId}`
-            )
-            queryNotification.setNotification(
-              db,
-              'WARNING',
-              `${sessionId}, ${zclFile}: Multiple toplevel zcl.properties found. Using the first one from args: ${packageId}`,
-              sessionId,
-              2,
-              0
-            )
-          }
-          if (packageId != null) {
-            if (sessionPartitionInfo.length == 0) {
-              sessionPartitionIndex++
-              return querySession
-                .insertSessionPartition(db, sessionId, sessionPartitionIndex)
-                .then((sessionPartitionId) =>
-                  queryPackage.insertSessionPackage(
-                    db,
-                    sessionPartitionId,
-                    packageId,
-                    true
-                  )
-                )
-            } else {
-              sessionPartitionIndex++
-              return querySession
-                .getAllSessionPartitionInfoForSession(db, sessionId)
-                .then((sessionPartitionInfo) =>
-                  queryPackage.insertSessionPackage(
-                    db,
-                    sessionPartitionInfo[sessionPartitionIndex - 1]
-                      .sessionPartitionId,
-                    packageId,
-                    true
-                  )
-                )
-            }
-          }
-        })
-      promises.push(zclPropertiesPromise)
+      let rows = await queryPackage.getPackagesByType(
+        db,
+        dbEnum.packageType.zclProperties
+      )
+      let packageId = null
+      if (selectedZclPropertyPackage && selectedZclPropertyPackage.length > 0) {
+        packageId = selectedZclPropertyPackage[0].id
+      } else if (rows.length == 1) {
+        packageId = rows[0].id
+        env.logDebug(
+          `Single zcl.properties found, using it for the session: ${packageId}`
+        )
+      } else if (rows.length == 0) {
+        env.logError(`No zcl.properties found for session.`)
+        await queryNotification.setNotification(
+          db,
+          'WARNING',
+          `No zcl.properties found for session.`,
+          sessionId,
+          2,
+          0
+        )
+      } else {
+        // Multiple toplevel metafiles are loaded, which is the regular case
+        // for SDKs that ship more than one data model, such as Zigbee and
+        // Matter. The session has to use the metafile that was requested,
+        // otherwise it ends up showing a different data model than the one
+        // the project is built against.
+        let match = findPackageByPaths(rows, requestedZclPaths)
+        if (match != null) {
+          packageId = match.id
+          env.logDebug(
+            `${sessionId}: Multiple toplevel zcl.properties found. Using the requested one: ${match.path}`
+          )
+        } else {
+          // The requested metafile is not among the loaded ones, so any choice
+          // we make here is a guess. Prefer a metafile that still exists on
+          // disk and report it, since generation and validation results depend
+          // on which data model the session ends up with.
+          let fallback = rows.find((p) => fs.existsSync(p.path)) ?? rows[0]
+          packageId = fallback.id
+          let message =
+            `${sessionId}: Multiple toplevel zcl.properties found, but none of them matches ` +
+            `${requestedZclPaths.length > 0 ? requestedZclPaths.join(', ') : 'the arguments, since no zcl metafile was requested'}. ` +
+            `Using ${fallback.path}. Loaded metafiles: ${rows.map((p) => p.path).join(', ')}`
+          env.logWarning(message)
+          await queryNotification.setNotification(
+            db,
+            'WARNING',
+            message,
+            sessionId,
+            2,
+            0
+          )
+        }
+      }
+      if (packageId != null) {
+        sessionPartitionIndex++
+        let sessionPartitionId = await ensureSessionPartitionId(
+          db,
+          sessionId,
+          sessionPartitionIndex
+        )
+        await queryPackage.insertSessionPackage(
+          db,
+          sessionPartitionId,
+          packageId,
+          true
+        )
+      }
     }
   }
 
@@ -220,18 +308,23 @@ async function ensurePackagesAndPopulateSessionOptions(
           JSON.stringify(selectedGenTemplatePackages)
       )
       for (let i = 0; i < selectedGenTemplatePackages.length; i++) {
+        sessionPartitionIndex++
+        let sessionPartitionId = await ensureSessionPartitionId(
+          db,
+          sessionId,
+          sessionPartitionIndex
+        )
         promises.push(
           queryPackage.insertSessionPackage(
             db,
-            sessionPartitionInfo[sessionPartitionIndex].sessionPartitionId,
+            sessionPartitionId,
             selectedGenTemplatePackages[i],
             true
           )
         )
-        sessionPartitionIndex++
       }
     } else if (
-      options.upgradeTemplatePackages &&
+      options?.upgradeTemplatePackages &&
       options.upgradeTemplatePackages.length > 0
     ) {
       for (let i = 0; i < options.upgradeTemplatePackages.length; i++) {
@@ -253,6 +346,12 @@ async function ensurePackagesAndPopulateSessionOptions(
         db,
         dbEnum.packageType.genTemplatesJson
       )
+      // Generation template metafiles can be requested either as packages or
+      // as paths, for example from the command line arguments.
+      let requestedTemplatePaths = [
+        ...collectPackagePaths(selectedGenTemplatePackages),
+        ...collectPackagePaths(options?.template)
+      ]
       let packageId
       if (
         selectedGenTemplatePackages &&
@@ -270,35 +369,23 @@ async function ensurePackagesAndPopulateSessionOptions(
             env.logDebug(`No generation template metafile found for session.`)
             packageId = null
           } else {
-            rows.forEach((p) => {
-              if (
-                selectedGenTemplatePackages != null &&
-                path.resolve(selectedGenTemplatePackages) === p.path
-              ) {
-                packageId = p.id
-              }
-            })
-            if (packageId != null) {
-              env.logWarning(
-                `Multiple toplevel generation template metafiles found. Using the one from args: ${packageId}`
-              )
-              queryNotification.setNotification(
-                db,
-                'WARNING',
-                `Multiple toplevel generation template metafiles found. Using the one from args: ${packageId}`,
-                sessionId,
-                2,
-                0
+            let match = findPackageByPaths(rows, requestedTemplatePaths)
+            if (match != null) {
+              packageId = match.id
+              env.logDebug(
+                `Multiple toplevel generation template metafiles found. Using the requested one: ${match.path}`
               )
             } else {
               packageId = rows[0].id
-              env.logWarning(
-                `Multiple toplevel generation template metafiles found. Using the first one.`
-              )
-              queryNotification.setNotification(
+              let message =
+                `Multiple toplevel generation template metafiles found, but none of them matches ` +
+                `${requestedTemplatePaths.length > 0 ? requestedTemplatePaths.join(', ') : 'the arguments, since no generation template metafile was requested'}. ` +
+                `Using ${rows[0].path}`
+              env.logWarning(message)
+              await queryNotification.setNotification(
                 db,
                 'WARNING',
-                `Multiple toplevel generation template metafiles found. Using the first one.`,
+                message,
                 sessionId,
                 2,
                 0
@@ -306,78 +393,56 @@ async function ensurePackagesAndPopulateSessionOptions(
             }
           }
           if (packageId != null) {
-            if (sessionPartitionInfo.length === 0) {
-              sessionPartitionIndex++
-              const sessionPartitionId =
-                await querySession.insertSessionPartition(
-                  db,
-                  sessionId,
-                  sessionPartitionIndex
-                )
-              await queryPackage.insertSessionPackage(
-                db,
-                sessionPartitionId,
-                packageId,
-                true
-              )
-            } else {
-              sessionPartitionIndex++
-              const sessionPartitionInfo =
-                await querySession.getAllSessionPartitionInfoForSession(
-                  db,
-                  sessionId
-                )
-              await queryPackage.insertSessionPackage(
-                db,
-                sessionPartitionInfo[sessionPartitionIndex - 1]
-                  .sessionPartitionId,
-                packageId,
-                true
-              )
-            }
+            sessionPartitionIndex++
+            const sessionPartitionId = await ensureSessionPartitionId(
+              db,
+              sessionId,
+              sessionPartitionIndex
+            )
+            await queryPackage.insertSessionPackage(
+              db,
+              sessionPartitionId,
+              packageId,
+              true
+            )
           }
         }
       }
       if (packageId == null && rows.length > 0) {
-        // If package id is not resolved and there are gen-template packages available,
-        // find one with matching category. if nothing is found, blindly pick the first one available
-
-        let packageId
-        if (
+        // The package id is not resolved, so use the requested metafile if it
+        // is among the loaded ones, then one with a matching category, and
+        // blindly pick the first one available as a last resort.
+        let fallbackPackageId
+        const matchByRequestedPath = findPackageByPaths(
+          rows,
+          requestedTemplatePaths
+        )
+        if (matchByRequestedPath != null) {
+          fallbackPackageId = matchByRequestedPath.id
+        } else if (
           selectedZclPropertyPackage &&
           selectedZclPropertyPackage.length > 0
         ) {
           const matchBySelectedCategory = rows.find(
             (r) => r?.category === selectedZclPropertyPackage[0].category
           )
-          packageId = matchBySelectedCategory?.id || rows[0].id
+          fallbackPackageId = matchBySelectedCategory?.id || rows[0].id
         } else {
-          packageId = rows[0].id
+          fallbackPackageId = rows[0].id
         }
 
-        if (sessionPartitionInfo.length == 0) {
-          sessionPartitionIndex++
-          const sessionPartitionId = await querySession.insertSessionPartition(
-            db,
-            sessionId,
-            sessionPartitionIndex
-          )
-          await queryPackage.insertSessionPackage(
-            db,
-            sessionPartitionId,
-            packageId,
-            true
-          )
-        } else {
-          sessionPartitionIndex++
-          await querySession.getAllSessionPartitionInfoForSession(db, sessionId)
-          await queryPackage.insertSessionPackage(
-            db,
-            sessionPartitionInfo[sessionPartitionIndex - 1].sessionPartitionId,
-            packageId,
-            true
-          )
-        }
+        sessionPartitionIndex++
+        const sessionPartitionId = await ensureSessionPartitionId(
+          db,
+          sessionId,
+          sessionPartitionIndex
+        )
+        await queryPackage.insertSessionPackage(
+          db,
+          sessionPartitionId,
+          fallbackPackageId,
+          true
+        )
       }
     }
   }
@@ -1013,6 +1078,9 @@ async function getUpgradePackageMatch(
 
 exports.createBackupFile = createBackupFile
 exports.checksum = checksum
+exports.collectPackagePaths = collectPackagePaths
+exports.pathsMatch = pathsMatch
+exports.findPackageByPaths = findPackageByPaths
 exports.ensurePackagesAndPopulateSessionOptions =
   ensurePackagesAndPopulateSessionOptions
 exports.matchFeatureLevel = matchFeatureLevel

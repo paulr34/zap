@@ -141,7 +141,9 @@ async function getPackageIdByPathAndTypeAndVersion(db, path, type, version) {
 }
 
 /**
- * Returns packages of a given type.
+ * Returns packages of a given type. The rows are ordered by package id, since
+ * callers that have to guess a package fall back to the first row and that
+ * choice has to stay the same across invocations.
  *
  * @param {*} db
  * @param {*} type
@@ -149,9 +151,11 @@ async function getPackageIdByPathAndTypeAndVersion(db, path, type, version) {
  */
 async function getPackagesByType(db, type) {
   return dbApi
-    .dbAll(db, `${querySelectFromPackage} WHERE TYPE = ? AND IS_IN_SYNC = 1`, [
-      type
-    ])
+    .dbAll(
+      db,
+      `${querySelectFromPackage} WHERE TYPE = ? AND IS_IN_SYNC = 1 ORDER BY PACKAGE_ID`,
+      [type]
+    )
     .then((rows) => rows.map(dbMapping.map.package))
 }
 /**
