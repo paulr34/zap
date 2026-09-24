@@ -1,0 +1,183 @@
+// Template driven endpoint configuration.
+//
+// Every table below is generated twice: once with the aggregate helper that
+// builds the table in javascript, and once by iterating the same data in this
+// template. The test asserts that both halves are identical, which is what
+// makes it safe for an SDK to move a table into its own template and then
+// change only the part it cares about.
+
+{{#endpoint_config allowUnknownStorageOption="false" spaceForDefaultValue=4}}
+// BEGIN AGGREGATE ATTRIBUTES
+{{endpoint_attribute_list order='default,id,size,type,mask'~}}
+// END AGGREGATE ATTRIBUTES
+
+// BEGIN ITERATED ATTRIBUTES
+{ \
+{{#endpoint_attributes}}
+{{#if isNewComment}}
+\
+  /* {{comment}} */ \
+{{/if}}
+  { {{endpoint_attribute_items order='default,id,size,type,mask'}} }, /* {{name}} */  \
+{{/endpoint_attributes}}
+}
+// END ITERATED ATTRIBUTES
+
+// BEGIN AGGREGATE MIN MAX
+{{endpoint_attribute_min_max_list~}}
+// END AGGREGATE MIN MAX
+
+// BEGIN ITERATED MIN MAX
+{ \
+{{#endpoint_min_max_defaults}}
+{{#if isNewComment}}
+\
+  /* {{comment}} */ \
+{{/if}}
+  { {{endpoint_min_max_default}}, {{endpoint_min_max_min}}, {{endpoint_min_max_max}} }{{#not_last}},{{/not_last}} /* {{name}} */ \
+{{/endpoint_min_max_defaults}}
+}
+// END ITERATED MIN MAX
+
+// BEGIN AGGREGATE CLUSTERS
+{{endpoint_cluster_list~}}
+// END AGGREGATE CLUSTERS
+
+// BEGIN ITERATED CLUSTERS
+{ \
+{{#endpoint_clusters}}
+  { {{clusterId}}, ZAP_ATTRIBUTE_INDEX({{attributeIndex}}), {{attributeCount}}, {{attributeSize}}, {{endpoint_cluster_mask}}, {{functions}} }, /* {{comment}} */ \
+{{/endpoint_clusters}}
+}
+// END ITERATED CLUSTERS
+
+// BEGIN AGGREGATE COMMANDS
+{{endpoint_command_list~}}
+// END AGGREGATE COMMANDS
+
+// BEGIN ITERATED COMMANDS
+{ \
+{{#endpoint_commands}}
+{{#if isNewComment}}
+\
+  /* {{comment}} */ \
+{{/if}}
+  { {{clusterId}}, {{commandId}}, {{endpoint_command_mask}} }, /* {{name}} */ \
+{{/endpoint_commands}}
+}
+// END ITERATED COMMANDS
+
+// BEGIN AGGREGATE ENDPOINT TYPES
+{{endpoint_types_list~}}
+// END AGGREGATE ENDPOINT TYPES
+
+// BEGIN ITERATED ENDPOINT TYPES
+{ \
+{{#endpoint_types}}
+  { ZAP_CLUSTER_INDEX({{clusterIndex}}), {{clusterCount}}, {{attributeSize}} }, \
+{{/endpoint_types}}
+}
+// END ITERATED ENDPOINT TYPES
+
+// BEGIN AGGREGATE LONG DEFAULTS
+{{endpoint_attribute_long_defaults endian="little"~}}
+// END AGGREGATE LONG DEFAULTS
+
+// BEGIN ITERATED LONG DEFAULTS
+{ \
+{{#endpoint_long_defaults}}
+{{#if isNewComment}}
+\
+  /* {{comment}}, little-endian */\
+\
+{{/if}}
+  /* {{offset}} - {{name}}, */\
+  {{endpoint_long_default_value endian="little"}}\
+\
+{{/endpoint_long_defaults}}
+}
+// END ITERATED LONG DEFAULTS
+
+// BEGIN LONG DEFAULT POSITIONS
+{{#endpoint_long_defaults}}
+POSITION {{index}} of {{count}} offset {{offset}}{{#first}} FIRST{{/first}}{{#last}} LAST{{/last}}
+{{/endpoint_long_defaults}}
+// END LONG DEFAULT POSITIONS
+
+// BEGIN AGGREGATE ATTRIBUTE MFG CODES
+{{endpoint_attribute_manufacturer_codes~}}
+// END AGGREGATE ATTRIBUTE MFG CODES
+
+// BEGIN ITERATED ATTRIBUTE MFG CODES
+{ \
+{{#endpoint_manufacturer_codes type="attribute"}}
+  { {{entryIndex}}, {{mfgCode}} },\
+{{else}}
+  { 0x00, 0x00 } \
+{{/endpoint_manufacturer_codes}}
+}
+// END ITERATED ATTRIBUTE MFG CODES
+
+// BEGIN AGGREGATE FIXED ARRAYS
+{{endpoint_fixed_endpoint_array}}
+{{endpoint_fixed_profile_id_array}}
+{{endpoint_fixed_parent_id_array}}
+{{endpoint_fixed_network_array}}
+{{endpoint_fixed_endpoint_type_array}}
+{{endpoint_fixed_device_type_array}}
+{{endpoint_fixed_device_type_array isEndpointIncluded=true}}
+{{endpoint_fixed_device_type_array_offsets}}
+{{endpoint_fixed_device_type_array_lengths}}
+// END AGGREGATE FIXED ARRAYS
+
+// BEGIN ITERATED FIXED ARRAYS
+{ {{#endpoint_fixed_endpoints}}{{endpointIdHex}}{{#not_last}}, {{/not_last}}{{/endpoint_fixed_endpoints}} }
+{ {{#endpoint_fixed_endpoints}}{{profileIdHex}}{{#not_last}}, {{/not_last}}{{/endpoint_fixed_endpoints}} }
+{ {{#endpoint_fixed_endpoints}}{{parentId}}{{#not_last}}, {{/not_last}}{{/endpoint_fixed_endpoints}} }
+{ {{#endpoint_fixed_endpoints}}{{networkId}}{{#not_last}}, {{/not_last}}{{/endpoint_fixed_endpoints}} }
+{ {{#endpoint_fixed_endpoints}}{{endpointTypeIndex}}{{#not_last}}, {{/not_last}}{{/endpoint_fixed_endpoints}} }
+{ {{~#endpoint_device_types}}{ {{~deviceIdHex}},{{deviceVersion~}} }{{#not_last}},{{/not_last}}{{/endpoint_device_types~}} }
+{ {{~#endpoint_device_types}}{ {{~deviceIdHex}},{{deviceVersion}},{{endpointId~}} }{{#not_last}},{{/not_last}}{{/endpoint_device_types~}} }
+{ {{#endpoint_fixed_endpoints}}{{deviceTypeOffset}}{{#not_last}},{{/not_last}}{{/endpoint_fixed_endpoints~}} }
+{ {{#endpoint_fixed_endpoints}}{{deviceTypeCount}}{{#not_last}},{{/not_last}}{{/endpoint_fixed_endpoints~}} }
+// END ITERATED FIXED ARRAYS
+{{/endpoint_config}}
+
+// Attribute metadata of code driven clusters, which keep their own tables in
+// C++, can be left out. The cluster stays in the cluster table with a count of
+// zero, so indexes into the attribute table stay consistent.
+{{#endpoint_config allowUnknownStorageOption="false" spaceForDefaultValue=4 omitAttributeMetadataClusters="Level Control,0x0006" omitCommandMetadataClusters="0x0006"}}
+// BEGIN OMITTED
+ATTRIBUTE COUNT {{endpoint_attribute_count}}
+COMMAND COUNT {{endpoint_command_count}}
+{{#endpoint_clusters}}
+{{#if_endpoint_cluster_in "Level Control,0x0006,0x0003"}}
+CLUSTER {{clusterName}} attributes={{attributeCount}} commands={{commandCount}} attributesOmitted={{omitsAttributeMetadata}} commandsOmitted={{omitsCommandMetadata}}
+{{/if_endpoint_cluster_in}}
+{{/endpoint_clusters}}
+{{#endpoint_attributes}}
+{{#if_endpoint_cluster_in "Level Control"}}
+LEFTOVER {{clusterName}}.{{name}}
+{{/if_endpoint_cluster_in}}
+{{/endpoint_attributes}}
+{{! Rows are matched by the cluster they belong to, by name and by code, }}
+{{! and not by their own name or code. }}
+{{#endpoint_attributes}}
+{{#if_endpoint_cluster_in "Identify"}}
+BY NAME {{clusterName}}.{{name}}
+{{/if_endpoint_cluster_in}}
+{{#if_endpoint_cluster_in "0x0003"}}
+BY CODE {{clusterName}}.{{name}}
+{{/if_endpoint_cluster_in}}
+{{/endpoint_attributes}}
+{{#endpoint_clusters}}
+RANGE {{attributeIndex}} {{attributeCount}}
+{{/endpoint_clusters}}
+// END OMITTED
+
+// The cluster table of the SDK is generated from the same data, so it has to
+// stay consistent with the shortened attribute table.
+// BEGIN OMITTED CLUSTER TABLE
+{{chip_endpoint_cluster_list~}}
+// END OMITTED CLUSTER TABLE
+{{/endpoint_config}}
