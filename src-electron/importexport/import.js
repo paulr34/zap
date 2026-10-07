@@ -322,12 +322,22 @@ async function importDataFromFile(
     let sid
     if (options.sessionId == null) {
       sid = await querySession.createBlankSession(db)
+      // Request the metafiles that belong to the file being imported. Asking
+      // for the builtin ones instead would associate an unrelated data model,
+      // such as Zigbee for a Matter file, whenever more than one toplevel
+      // metafile is loaded.
       await util.ensurePackagesAndPopulateSessionOptions(
         db,
         sid,
         {
-          zcl: env.builtinSilabsZclMetafile(),
-          template: env.builtinTemplateMetafile(),
+          zcl:
+            options.zclProperties ??
+            options.defaultZclMetafile ??
+            env.builtinSilabsZclMetafile(),
+          template:
+            options.generationTemplate ??
+            options.defaultTemplateFile ??
+            env.builtinTemplateMetafile(),
           upgradeZclPackages: options.upgradeZclPackages,
           upgradeTemplatePackages: options.upgradeTemplatePackages
         },
