@@ -345,6 +345,148 @@ test(
   testUtil.timeout.long()
 )
 
+/**
+ * Returns the text between the begin and end markers of a section of the
+ * template driven endpoint configuration.
+ *
+ * @param {*} content generated file content
+ * @param {*} name section name
+ * @returns section text
+ */
+function endpointConfigSection(content, name) {
+  let section = content.match(
+    new RegExp(`// BEGIN ${name}\\n([\\s\\S]*?)// END ${name}`)
+  )
+  expect(section).not.toBeNull()
+  return section[1]
+}
+
+test(
+  `Template driven endpoint configuration: ${path.relative(
+    __dirname,
+    testFile
+  )}`,
+  async () => {
+    let sessionId = await querySession.createBlankSession(db)
+
+    await importJs.importDataFromFile(db, testFile, {
+      sessionId: sessionId
+    })
+
+    let genResult = await genEngine.generate(
+      db,
+      sessionId,
+      templateContext.packageId,
+      {},
+      { disableDeprecationWarnings: true }
+    )
+    expect(genResult.hasErrors).toEqual(false)
+
+    let ept = genResult.content['endpoint_config_iterators.h']
+    expect(ept).not.toBeNull()
+
+    // A template that iterates the endpoint configuration must be able to
+    // produce exactly what the aggregate helpers produce. Anything less means
+    // an SDK cannot move a table into its own template without churn in the
+    // generated output.
+    for (const table of [
+      'ATTRIBUTES',
+      'MIN MAX',
+      'CLUSTERS',
+      'COMMANDS',
+      'ENDPOINT TYPES',
+      'LONG DEFAULTS',
+      'ATTRIBUTE MFG CODES',
+      'FIXED ARRAYS'
+    ]) {
+      expect(endpointConfigSection(ept, `ITERATED ${table}`)).toEqual(
+        endpointConfigSection(ept, `AGGREGATE ${table}`)
+      )
+    }
+
+    // Sanity check that the comparison above is not comparing empty sections.
+    expect(endpointConfigSection(ept, 'AGGREGATE ATTRIBUTES')).toContain(
+      'ZAP_TYPE('
+    )
+    expect(endpointConfigSection(ept, 'AGGREGATE MIN MAX')).toContain(
+      '(uint16_t)'
+    )
+    expect(endpointConfigSection(ept, 'AGGREGATE LONG DEFAULTS')).toContain(
+      "'C', 'o', 'f', 'f', 'e', 'e'"
+    )
+
+    // Lists whose rows carry an index into a generated table keep that value
+    // under its own name, so the position of a row in the iteration, and with
+    // it {{#first}} and {{#last}}, stay usable.
+    let positions = endpointConfigSection(ept, 'LONG DEFAULT POSITIONS')
+      .trim()
+      .split('\n')
+    expect(positions.length).toBeGreaterThan(1)
+    positions.forEach((line, index) => {
+      expect(line).toMatch(
+        new RegExp(`^POSITION ${index} of ${positions.length} offset \\d+`)
+      )
+    })
+    expect(positions[0]).toContain('FIRST')
+    expect(positions[positions.length - 1]).toContain('LAST')
+    expect(positions.filter((line) => line.includes('LAST')).length).toEqual(1)
+
+    // Clusters that keep their own metadata in C++ can have it left out of
+    // the generated tables, while keeping their place in the cluster table.
+    let omitted = endpointConfigSection(ept, 'OMITTED')
+    // Level Control was omitted by name, and keeps its commands.
+    expect(omitted).toContain(
+      'CLUSTER Level Control attributes=0 commands=8 attributesOmitted=true commandsOmitted=false'
+    )
+    // On/Off was omitted by code, for both attributes and commands.
+    expect(omitted).toContain(
+      'CLUSTER On/Off attributes=0 commands=0 attributesOmitted=true commandsOmitted=true'
+    )
+    // Identify was not named, so nothing changes for it.
+    expect(omitted).toContain(
+      'CLUSTER Identify attributes=4 commands=2 attributesOmitted=false commandsOmitted=false'
+    )
+    expect(omitted).not.toContain('LEFTOVER')
+
+    // Rows are matched by the cluster they belong to. Matching by the name or
+    // the code of the row itself would both miss these and pick up attributes
+    // of other clusters.
+    let byName = omitted.match(/BY NAME .*/g)
+    let byCode = omitted.match(/BY CODE .*/g)
+    expect(byName).not.toBeNull()
+    expect(byName).toContain('BY NAME Identify.IdentifyTime')
+    expect(byName.map((l) => l.replace('BY NAME', 'BY CODE'))).toEqual(byCode)
+    byName.forEach((line) => expect(line).toContain('Identify.'))
+
+    // Dropping metadata has to shrink the tables, otherwise there is no flash
+    // to be saved.
+    let attributeCount = Number(omitted.match(/ATTRIBUTE COUNT (\d+)/)[1])
+    let commandCount = Number(omitted.match(/COMMAND COUNT (\d+)/)[1])
+    let full = genResult.content['endpoint_config.h']
+    expect(attributeCount).toBeLessThan(
+      Number(full.match(/#define GENERATED_ATTRIBUTE_COUNT (\d+)/)[1])
+    )
+    expect(commandCount).toBeGreaterThan(0)
+
+    // The cluster table indexes the attribute table, so the ranges of the
+    // clusters have to cover the shortened table without gaps or overlap.
+    let expectedIndex = 0
+    for (const range of omitted.matchAll(/RANGE (\d+) (\d+)/g)) {
+      expect(Number(range[1])).toEqual(expectedIndex)
+      expectedIndex += Number(range[2])
+    }
+    expect(expectedIndex).toEqual(attributeCount)
+
+    // The same has to hold for the cluster table that the SDK generates from
+    // this data with its own helper.
+    let clusterTable = endpointConfigSection(ept, 'OMITTED CLUSTER TABLE')
+    expect(clusterTable).toMatch(
+      /Cluster: On\/Off \(server\) \*\/ \\\s+\.clusterId = 0x00000006, \\\s+\.attributes = ZAP_ATTRIBUTE_INDEX\(\d+\), \\\s+\.attributeCount = 0,/
+    )
+  },
+  testUtil.timeout.long()
+)
+
 test(
   `Zap multiple device type per endpoint file generation: ${path.relative(
     __dirname,

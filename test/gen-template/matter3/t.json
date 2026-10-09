@@ -136,6 +136,11 @@
       "output": "endpoint_config_v2.h"
     },
     {
+      "path": "endpoint_config_iterators.zapt",
+      "name": "Endpoint Config Iterators",
+      "output": "endpoint_config_iterators.h"
+    },
+    {
       "path": "miscellaneous_helper_tests.zapt",
       "name": "miscellaneous helper",
       "output": "miscellaneous_helper_tests.out"

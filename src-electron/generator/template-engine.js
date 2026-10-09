@@ -37,6 +37,7 @@ const includedHelpers = [
   require('./helper-session'),
   require('./helper-shared-config'),
   require('./helper-endpointconfig'),
+  require('./helper-endpointconfig-iterators'),
   require('./helper-sdkextension'),
   require('./helper-tokens'),
   require('./helper-attribute'),

@@ -105,6 +105,16 @@ For example, in your SDK code, you can call the helpers like this:
 <p>Attributes Count: {{ get_total_attributes_helper }}</p>
 The api object, provided by ZAP, contains the data and methods required for these helpers to work.
 
+## Replacing a built-in helper
+
+Helpers listed under `"helpers"` are loaded **after** ZAP's built-in helpers, so
+an export that uses the name of a built-in helper replaces it for that template
+package. That is how an SDK takes over generation logic without changes in ZAP.
+
+For the endpoint configuration there is usually a lighter alternative, where the
+SDK owns the layout of a generated table but not the collection of the data. See
+[Endpoint configuration generation](endpoint-config-generation.md).
+
 ## Conclusion
 
 This design pattern allows SDK developers to create externalized helpers. By leveraging the gen-template.json configuration file and the API object, SDK developers can interact with ZAP without needing direct access to ZAP’s internal source code. The approach abstracts method and query name changes in ZAP, ensuring that SDK code remains resilient to changes in the ZAP API.
