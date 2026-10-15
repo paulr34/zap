@@ -13,30 +13,30 @@
 <dt><a href="#module_REST API_ REST API.">REST API: REST API.</a></dt>
 <dd><p>This module provides REST API Exports.</p>
 </dd>
-<dt><a href="#module_CLI API_ edit command line">CLI API: edit command line</a></dt>
-<dd><p>The <code>zap edit</code> command line: everything the GUI can do to a configuration,
+<dt><a href="#module_CLI API_ command line">CLI API: command line</a></dt>
+<dd><p>The configuration command line: everything the GUI can do to a .zap file,
 driven from a terminal or a script.</p>
-<p>The subcommands are organized as noun-verb pairs, mirroring the panels of
-the GUI: <code>endpoint</code>, <code>devicetype</code>, <code>cluster</code>, <code>attribute</code>, <code>command</code>,
-<code>event</code> and <code>feature</code>. <code>zap edit apply</code> runs a whole list of operations in
-one process, which matters because loading the ZCL metadata is by far the
+<p>The subcommands sit at the root and are organized as noun-verb pairs,
+mirroring the panels of the GUI: <code>zap endpoint create</code>, <code>zap cluster enable</code>,
+<code>zap attribute set</code>. <code>zap apply</code> runs a whole list of operations in one
+process, which matters because loading the ZCL metadata is by far the
 slowest part of any invocation.</p>
 <p>The command tree here is generated from the description in <code>cli-spec</code>, which
-is also what <code>zap edit help</code> reports, so the parser and the help cannot
-disagree about what exists.</p>
+is also what <code>zap help</code> reports, so the parser and the help cannot disagree
+about what exists.</p>
 </dd>
 <dt><a href="#module_CLI API_ errors">CLI API: errors</a></dt>
-<dd><p>Error type used by the <code>zap edit</code> command line.</p>
+<dd><p>Error type used by the <code>zap</code> command line.</p>
 </dd>
 <dt><a href="#module_CLI API_ help">CLI API: help</a></dt>
-<dd><p><code>zap edit help</code>: describes the whole command surface, either as a page for a
+<dd><p><code>zap help</code>: describes the whole command surface, either as a page for a
 person or as a schema for a script.</p>
 <p>This answers the question &quot;what can I do and what do I have to pass&quot; without
 touching the database, which matters because loading the ZCL metadata takes
 seconds and discovering the command surface should not.</p>
 </dd>
 <dt><a href="#module_CLI API_ operations">CLI API: operations</a></dt>
-<dd><p>Every edit and query that <code>zap edit</code> can perform on a configuration.</p>
+<dd><p>Every edit and query the configuration commands can perform.</p>
 <p>These are deliberately written on top of the same <code>query-*</code> modules that the
 REST layer uses, so that a change made from the command line is
 indistinguishable from the same change made in the GUI.</p>
@@ -46,7 +46,7 @@ modified, lines describing what happened, optional tabular output, and the
 commands that are the natural thing to run afterwards.</p>
 </dd>
 <dt><a href="#module_CLI API_ output rendering">CLI API: output rendering</a></dt>
-<dd><p>Rendering of <code>zap edit</code> results, either as text for a person or as JSON for
+<dd><p>Rendering of <code>zap</code> results, either as text for a person or as JSON for
 a script.</p>
 </dd>
 <dt><a href="#module_CLI API_ data model policy">CLI API: data model policy</a></dt>
@@ -67,20 +67,20 @@ line reports a change that the next read silently undoes.</p>
 rest of ZAP works with.</p>
 </dd>
 <dt><a href="#module_CLI API_ batch scripts">CLI API: batch scripts</a></dt>
-<dd><p>Reads the batch scripts consumed by <code>zap edit apply</code>.</p>
-<p>Loading the ZCL metadata dominates the cost of any single <code>zap edit</code>
+<dd><p>Reads the batch scripts consumed by <code>zap apply</code>.</p>
+<p>Loading the ZCL metadata dominates the cost of any single <code>zap</code>
 invocation, so applying a list of operations in one process is the
 recommended way to make more than a couple of changes.</p>
 </dd>
 <dt><a href="#module_CLI API_ session lifecycle">CLI API: session lifecycle</a></dt>
-<dd><p>Load / mutate / save lifecycle for the <code>zap edit</code> command line. This is the
+<dd><p>Load / mutate / save lifecycle for the <code>zap</code> command line. This is the
 headless counterpart of what the HTTP server does for the GUI: it puts a
 .zap file into a session in the database, hands that session to the
 operations, and writes the result back out.</p>
 </dd>
 <dt><a href="#module_CLI API_ command surface">CLI API: command surface</a></dt>
-<dd><p>The <code>zap edit</code> command surface, described as data.</p>
-<p>The yargs command tree and the machine readable output of <code>zap edit help</code>
+<dd><p>The configuration command surface, described as data.</p>
+<p>The yargs command tree and the machine readable output of <code>zap help</code>
 are both generated from this one description, so what the parser accepts and
 what the help advertises cannot drift apart. That matters most for callers
 that are not people: a script or an agent can read the schema, learn every
@@ -562,61 +562,63 @@ Global function that can be overloaded by jxbrowser for notifications
 ## REST API: REST API.
 This module provides REST API Exports.
 
-<a name="module_CLI API_ edit command line"></a>
+<a name="module_CLI API_ command line"></a>
 
-## CLI API: edit command line
-The `zap edit` command line: everything the GUI can do to a configuration,
+## CLI API: command line
+The configuration command line: everything the GUI can do to a .zap file,
 driven from a terminal or a script.
 
-The subcommands are organized as noun-verb pairs, mirroring the panels of
-the GUI: `endpoint`, `devicetype`, `cluster`, `attribute`, `command`,
-`event` and `feature`. `zap edit apply` runs a whole list of operations in
-one process, which matters because loading the ZCL metadata is by far the
+The subcommands sit at the root and are organized as noun-verb pairs,
+mirroring the panels of the GUI: `zap endpoint create`, `zap cluster enable`,
+`zap attribute set`. `zap apply` runs a whole list of operations in one
+process, which matters because loading the ZCL metadata is by far the
 slowest part of any invocation.
 
 The command tree here is generated from the description in `cli-spec`, which
-is also what `zap edit help` reports, so the parser and the help cannot
-disagree about what exists.
+is also what `zap help` reports, so the parser and the help cannot disagree
+about what exists.
 
 
-* [CLI API: edit command line](#module_CLI API_ edit command line)
-    * [~toYargsOption(option)](#module_CLI API_ edit command line..toYargsOption) ⇒ <code>\*</code>
-    * [~applyOptions(y, options)](#module_CLI API_ edit command line..applyOptions) ⇒ <code>\*</code>
-    * [~registerOperation(y, verb, definition)](#module_CLI API_ edit command line..registerOperation) ⇒ <code>\*</code>
-    * [~buildCommandTree(y)](#module_CLI API_ edit command line..buildCommandTree) ⇒ <code>\*</code>
-    * [~parseHelpCommandLine(args)](#module_CLI API_ edit command line..parseHelpCommandLine) ⇒ <code>\*</code>
-    * [~isEditCommandLine(argv)](#module_CLI API_ edit command line..isEditCommandLine) ⇒ <code>boolean</code>
-    * [~isInterpreterOrScriptPath(arg)](#module_CLI API_ edit command line..isInterpreterOrScriptPath) ⇒ <code>boolean</code>
-    * [~optionTakesValue(flag)](#module_CLI API_ edit command line..optionTakesValue) ⇒ <code>boolean</code>
-    * [~indexOfEditCommand(argv)](#module_CLI API_ edit command line..indexOfEditCommand) ⇒ <code>number</code>
-    * [~precedingEditOptions(argv, editIndex)](#module_CLI API_ edit command line..precedingEditOptions) ⇒ <code>Array.&lt;string&gt;</code>
-    * [~parseEditCommandLine(argv)](#module_CLI API_ edit command line..parseEditCommandLine) ⇒ <code>\*</code>
-    * [~normalizeStdinScript(parsed)](#module_CLI API_ edit command line..normalizeStdinScript) ⇒ <code>\*</code>
-    * [~routeConsoleForMachineOutput(argv)](#module_CLI API_ edit command line..routeConsoleForMachineOutput) ⇒ <code>\*</code>
-    * [~outputPath(argv)](#module_CLI API_ edit command line..outputPath) ⇒ <code>string</code>
-    * [~requireNothingToOverwrite(argv)](#module_CLI API_ edit command line..requireNothingToOverwrite) ⇒ <code>undefined</code>
-    * [~isReadOnly(operation)](#module_CLI API_ edit command line..isReadOnly) ⇒ <code>boolean</code>
-    * [~requireResolvedPackages(ctx, operations)](#module_CLI API_ edit command line..requireResolvedPackages) ⇒ <code>void</code>
-    * [~run(argv, options)](#module_CLI API_ edit command line..run) ⇒ <code>Promise.&lt;number&gt;</code>
+* [CLI API: command line](#module_CLI API_ command line)
+    * [~toYargsOption(option)](#module_CLI API_ command line..toYargsOption) ⇒ <code>\*</code>
+    * [~applyOptions(y, options)](#module_CLI API_ command line..applyOptions) ⇒ <code>\*</code>
+    * [~registerOperation(y, verb, definition)](#module_CLI API_ command line..registerOperation) ⇒ <code>\*</code>
+    * [~buildCommandTree(y)](#module_CLI API_ command line..buildCommandTree) ⇒ <code>\*</code>
+    * [~parseHelpCommandLine(args)](#module_CLI API_ command line..parseHelpCommandLine) ⇒ <code>\*</code>
+    * [~isCliCommandLine(argv)](#module_CLI API_ command line..isCliCommandLine) ⇒ <code>boolean</code>
+    * [~configurationCommands()](#module_CLI API_ command line..configurationCommands) ⇒ <code>Set.&lt;string&gt;</code>
+    * [~hasPositionalAfter(argv, index)](#module_CLI API_ command line..hasPositionalAfter) ⇒ <code>boolean</code>
+    * [~isInterpreterOrScriptPath(arg)](#module_CLI API_ command line..isInterpreterOrScriptPath) ⇒ <code>boolean</code>
+    * [~optionTakesValue(flag)](#module_CLI API_ command line..optionTakesValue) ⇒ <code>boolean</code>
+    * [~indexOfCliCommand(argv)](#module_CLI API_ command line..indexOfCliCommand) ⇒ <code>number</code>
+    * [~precedingCliOptions(argv, commandIndex)](#module_CLI API_ command line..precedingCliOptions) ⇒ <code>Array.&lt;string&gt;</code>
+    * [~parseCliCommandLine(argv)](#module_CLI API_ command line..parseCliCommandLine) ⇒ <code>\*</code>
+    * [~normalizeStdinScript(parsed)](#module_CLI API_ command line..normalizeStdinScript) ⇒ <code>\*</code>
+    * [~routeConsoleForMachineOutput(argv)](#module_CLI API_ command line..routeConsoleForMachineOutput) ⇒ <code>\*</code>
+    * [~outputPath(argv)](#module_CLI API_ command line..outputPath) ⇒ <code>string</code>
+    * [~requireNothingToOverwrite(argv)](#module_CLI API_ command line..requireNothingToOverwrite) ⇒ <code>undefined</code>
+    * [~isReadOnly(operation)](#module_CLI API_ command line..isReadOnly) ⇒ <code>boolean</code>
+    * [~requireResolvedPackages(ctx, operations)](#module_CLI API_ command line..requireResolvedPackages) ⇒ <code>void</code>
+    * [~run(argv, options)](#module_CLI API_ command line..run) ⇒ <code>Promise.&lt;number&gt;</code>
 
-<a name="module_CLI API_ edit command line..toYargsOption"></a>
+<a name="module_CLI API_ command line..toYargsOption"></a>
 
-### CLI API: edit command line~toYargsOption(option) ⇒ <code>\*</code>
+### CLI API: command line~toYargsOption(option) ⇒ <code>\*</code>
 Translates one option from the spec into the shape yargs wants.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>\*</code> - yargs option definition  
 
 | Param | Type |
 | --- | --- |
 | option | <code>\*</code> | 
 
-<a name="module_CLI API_ edit command line..applyOptions"></a>
+<a name="module_CLI API_ command line..applyOptions"></a>
 
-### CLI API: edit command line~applyOptions(y, options) ⇒ <code>\*</code>
+### CLI API: command line~applyOptions(y, options) ⇒ <code>\*</code>
 Registers a set of options from the spec onto a yargs instance.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>\*</code> - the yargs instance  
 
 | Param | Type | Description |
@@ -624,13 +626,13 @@ Registers a set of options from the spec onto a yargs instance.
 | y | <code>\*</code> | yargs instance |
 | options | <code>\*</code> |  |
 
-<a name="module_CLI API_ edit command line..registerOperation"></a>
+<a name="module_CLI API_ command line..registerOperation"></a>
 
-### CLI API: edit command line~registerOperation(y, verb, definition) ⇒ <code>\*</code>
+### CLI API: command line~registerOperation(y, verb, definition) ⇒ <code>\*</code>
 Registers a leaf subcommand. The handler only tags the parsed arguments with
 the operation to run; execution happens later, in `run`.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>\*</code> - the yargs instance  
 
 | Param | Type | Description |
@@ -639,135 +641,159 @@ the operation to run; execution happens later, in `run`.
 | verb | <code>string</code> |  |
 | definition | <code>\*</code> | Operation description from the spec. |
 
-<a name="module_CLI API_ edit command line..buildCommandTree"></a>
+<a name="module_CLI API_ command line..buildCommandTree"></a>
 
-### CLI API: edit command line~buildCommandTree(y) ⇒ <code>\*</code>
-Builds the whole `zap edit` command tree onto a yargs instance.
+### CLI API: command line~buildCommandTree(y) ⇒ <code>\*</code>
+Builds the whole `zap` command tree onto a yargs instance.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>\*</code> - the yargs instance  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | y | <code>\*</code> | yargs instance |
 
-<a name="module_CLI API_ edit command line..parseHelpCommandLine"></a>
+<a name="module_CLI API_ command line..parseHelpCommandLine"></a>
 
-### CLI API: edit command line~parseHelpCommandLine(args) ⇒ <code>\*</code>
-Parses `zap edit help [topic...]`.
+### CLI API: command line~parseHelpCommandLine(args) ⇒ <code>\*</code>
+Parses `zap help [topic...]`.
 
 yargs claims a bare `help` positional for its own usage screen, and there is
 no way to register a command that outranks it. Since describing the command
 surface needs nothing from the command tree, help is parsed on its own here
 instead of fighting over the word.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
-**Returns**: <code>\*</code> - parsed arguments, tagged with `editOperation`  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
+**Returns**: <code>\*</code> - parsed arguments, tagged with `cliOperation`  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | args | <code>Array.&lt;string&gt;</code> | Arguments after the `help` word. |
 
-<a name="module_CLI API_ edit command line..isEditCommandLine"></a>
+<a name="module_CLI API_ command line..isCliCommandLine"></a>
 
-### CLI API: edit command line~isEditCommandLine(argv) ⇒ <code>boolean</code>
-True when the raw process arguments ask for the `edit` command.
+### CLI API: command line~isCliCommandLine(argv) ⇒ <code>boolean</code>
+True when the raw process arguments ask for a configuration command.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
-**Returns**: <code>boolean</code> - whether this is a `zap edit` invocation  
+Those commands live at the root (`zap endpoint list`, `zap new file.zap`).
+
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
+**Returns**: <code>boolean</code> - whether this is a configuration-command invocation  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | argv | <code>Array.&lt;string&gt;</code> | Raw `process.argv`. |
 
-<a name="module_CLI API_ edit command line..isInterpreterOrScriptPath"></a>
+<a name="module_CLI API_ command line..configurationCommands"></a>
 
-### CLI API: edit command line~isInterpreterOrScriptPath(arg) ⇒ <code>boolean</code>
+### CLI API: command line~configurationCommands() ⇒ <code>Set.&lt;string&gt;</code>
+Names that start a configuration command: the groups and the top-level
+operations.
+
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
+**Returns**: <code>Set.&lt;string&gt;</code> - command names  
+<a name="module_CLI API_ command line..hasPositionalAfter"></a>
+
+### CLI API: command line~hasPositionalAfter(argv, index) ⇒ <code>boolean</code>
+True when something after `index` is a positional argument rather than a flag.
+
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
+**Returns**: <code>boolean</code> - whether a positional follows  
+
+| Param | Type |
+| --- | --- |
+| argv | <code>Array.&lt;string&gt;</code> | 
+| index | <code>number</code> | 
+
+<a name="module_CLI API_ command line..isInterpreterOrScriptPath"></a>
+
+### CLI API: command line~isInterpreterOrScriptPath(arg) ⇒ <code>boolean</code>
 True for the interpreter and script path that lead a raw `process.argv`.
 
 Callers do not agree on whether those two are included, so rather than
 counting positions this recognizes them by shape: a path, or a bare
 interpreter name. No zap command looks like either.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>boolean</code> - whether the argument is a leading path rather than a command  
 
 | Param | Type |
 | --- | --- |
 | arg | <code>string</code> | 
 
-<a name="module_CLI API_ edit command line..optionTakesValue"></a>
+<a name="module_CLI API_ command line..optionTakesValue"></a>
 
-### CLI API: edit command line~optionTakesValue(flag) ⇒ <code>boolean</code>
+### CLI API: command line~optionTakesValue(flag) ⇒ <code>boolean</code>
 True when a leading flag takes a following value token.
 
-Built from the edit command's own global options so that
-`--stateDirectory /tmp edit …` skips `/tmp` rather than mistaking it for a
-command, while a boolean such as `--logToStdout` leaves `edit` in place.
-Unknown flags are treated as boolean: consuming their next token would hide
-a legitimate `edit` that follows.
+Built from the configuration commands' own global options so that
+`--stateDirectory /tmp endpoint list …` skips `/tmp` rather than mistaking
+it for a command, while a boolean such as `--logToStdout` leaves `endpoint`
+in place. Unknown flags are treated as boolean: consuming their next token
+would hide a legitimate command that follows.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>boolean</code> - whether the next argv token is this flag's value  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | flag | <code>string</code> | A token that starts with `-`. |
 
-<a name="module_CLI API_ edit command line..indexOfEditCommand"></a>
+<a name="module_CLI API_ command line..indexOfCliCommand"></a>
 
-### CLI API: edit command line~indexOfEditCommand(argv) ⇒ <code>number</code>
-Finds where the `edit` command starts in the raw arguments.
+### CLI API: command line~indexOfCliCommand(argv) ⇒ <code>number</code>
+Finds where a configuration command starts in the raw arguments.
 
-Global options may precede `edit` (`zap --logToStdout edit …`). Flags are
-skipped, and a following value is skipped when the flag is known to take
-one, so that `--output edit` (the word as a value) is not mistaken for the
-command. The first non-option, non-path token must still be `edit` itself;
-`zap generate …` does not engage this parser.
+The command is the group or operation itself (`zap endpoint list`,
+`zap new file.zap`). Global options may precede it
+(`zap --logToStdout endpoint list …`). Flags are skipped, and a following
+value is skipped when the flag is known to take one, so that
+`--output info` is not mistaken for the command. `zap generate …` does not
+engage this parser. Bare `zap new`, with no file after it, opens a window
+and is left to the general parser.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
-**Returns**: <code>number</code> - index of 'edit', or -1  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
+**Returns**: <code>number</code> - index of the configuration command, or -1  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | argv | <code>Array.&lt;string&gt;</code> | Raw `process.argv`, with or without its leading paths. |
 
-<a name="module_CLI API_ edit command line..precedingEditOptions"></a>
+<a name="module_CLI API_ command line..precedingCliOptions"></a>
 
-### CLI API: edit command line~precedingEditOptions(argv, editIndex) ⇒ <code>Array.&lt;string&gt;</code>
-Options that appeared before the `edit` token.
+### CLI API: command line~precedingCliOptions(argv, commandIndex) ⇒ <code>Array.&lt;string&gt;</code>
+Options that appeared before the command token.
 
-Detection allows `zap --logToStdout edit …`, but the edit parser only sees
-what follows `edit` unless those leading flags are carried across. Skip the
-interpreter and script paths; everything else before `edit` is an option.
+Detection allows `zap --logToStdout endpoint list …`. Skip the interpreter
+and script paths; everything else before the command is an option.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>Array.&lt;string&gt;</code> - preceding option tokens  
 
 | Param | Type |
 | --- | --- |
 | argv | <code>Array.&lt;string&gt;</code> | 
-| editIndex | <code>number</code> | 
+| commandIndex | <code>number</code> | 
 
-<a name="module_CLI API_ edit command line..parseEditCommandLine"></a>
+<a name="module_CLI API_ command line..parseCliCommandLine"></a>
 
-### CLI API: edit command line~parseEditCommandLine(argv) ⇒ <code>\*</code>
-Parses a `zap edit ...` command line.
+### CLI API: command line~parseCliCommandLine(argv) ⇒ <code>\*</code>
+Parses a configuration command line (`zap endpoint list file.zap`, and so on).
 
 This uses its own yargs instance rather than the general purpose one so that
 the nested subcommands, their per-command help and their required options
 all behave the way a person would expect.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
-**Returns**: <code>\*</code> - parsed arguments, tagged with `editOperation`  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
+**Returns**: <code>\*</code> - parsed arguments, tagged with `cliOperation`  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | argv | <code>Array.&lt;string&gt;</code> | Raw `process.argv`. |
 
-<a name="module_CLI API_ edit command line..normalizeStdinScript"></a>
+<a name="module_CLI API_ command line..normalizeStdinScript"></a>
 
-### CLI API: edit command line~normalizeStdinScript(parsed) ⇒ <code>\*</code>
+### CLI API: command line~normalizeStdinScript(parsed) ⇒ <code>\*</code>
 Restores the conventional meaning of `--script -`.
 
 yargs-parser treats a lone dash as a positional rather than as the value of
@@ -775,16 +801,16 @@ the option before it, so `--script -` arrives as an empty script with a
 stray dash alongside. Everyone writes it that way, so it is put back
 together rather than only supporting `--script=-`.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>\*</code> - the same parsed arguments  
 
 | Param | Type |
 | --- | --- |
 | parsed | <code>\*</code> | 
 
-<a name="module_CLI API_ edit command line..routeConsoleForMachineOutput"></a>
+<a name="module_CLI API_ command line..routeConsoleForMachineOutput"></a>
 
-### CLI API: edit command line~routeConsoleForMachineOutput(argv) ⇒ <code>\*</code>
+### CLI API: command line~routeConsoleForMachineOutput(argv) ⇒ <code>\*</code>
 Sends everything that is not the result to stderr when the caller asked for
 machine readable output.
 
@@ -794,28 +820,28 @@ along. Advertising `--format json` is only honest if stdout then carries the
 JSON and nothing else, so for the duration of such a run `console.log` is
 pointed at stderr. Nothing is lost, it just stops corrupting the payload.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>\*</code> - the same parsed arguments  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | argv | <code>\*</code> | Parsed arguments. |
 
-<a name="module_CLI API_ edit command line..outputPath"></a>
+<a name="module_CLI API_ command line..outputPath"></a>
 
-### CLI API: edit command line~outputPath(argv) ⇒ <code>string</code>
+### CLI API: command line~outputPath(argv) ⇒ <code>string</code>
 Decides which file the result should be written to.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>string</code> - output path  
 
 | Param | Type |
 | --- | --- |
 | argv | <code>\*</code> | 
 
-<a name="module_CLI API_ edit command line..requireNothingToOverwrite"></a>
+<a name="module_CLI API_ command line..requireNothingToOverwrite"></a>
 
-### CLI API: edit command line~requireNothingToOverwrite(argv) ⇒ <code>undefined</code>
+### CLI API: command line~requireNothingToOverwrite(argv) ⇒ <code>undefined</code>
 Refuses to start from an empty configuration on top of a file that already
 holds one.
 
@@ -824,28 +850,28 @@ configuration is not something to discard on the strength of a mistyped file
 name. There is a `~` copy afterwards either way, but noticing at the time is
 better than finding out later.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>undefined</code> - nothing, throws when the target is occupied  
 
 | Param | Type |
 | --- | --- |
 | argv | <code>\*</code> | 
 
-<a name="module_CLI API_ edit command line..isReadOnly"></a>
+<a name="module_CLI API_ command line..isReadOnly"></a>
 
-### CLI API: edit command line~isReadOnly(operation) ⇒ <code>boolean</code>
+### CLI API: command line~isReadOnly(operation) ⇒ <code>boolean</code>
 True for operations that only read the configuration.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>boolean</code> - whether the operation is read-only  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | operation | <code>string</code> | Dotted operation name. |
 
-<a name="module_CLI API_ edit command line..requireResolvedPackages"></a>
+<a name="module_CLI API_ command line..requireResolvedPackages"></a>
 
-### CLI API: edit command line~requireResolvedPackages(ctx, operations) ⇒ <code>void</code>
+### CLI API: command line~requireResolvedPackages(ctx, operations) ⇒ <code>void</code>
 Refuses to edit a configuration whose custom XML is not the custom XML it
 names.
 
@@ -855,7 +881,7 @@ Either way the session is built on a different data model than the file
 describes, and saving writes that difference back into the file. Reading such
 a configuration is still allowed, since that is how you find out.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>void</code> - nothing, or throws  
 
 | Param | Type | Description |
@@ -863,23 +889,23 @@ a configuration is still allowed, since that is how you find out.
 | ctx | <code>\*</code> |  |
 | operations | <code>Array</code> | The operations about to run. |
 
-<a name="module_CLI API_ edit command line..run"></a>
+<a name="module_CLI API_ command line..run"></a>
 
-### CLI API: edit command line~run(argv, options) ⇒ <code>Promise.&lt;number&gt;</code>
-Runs a parsed `zap edit` command line.
+### CLI API: command line~run(argv, options) ⇒ <code>Promise.&lt;number&gt;</code>
+Runs a parsed `zap` command line.
 
-**Kind**: inner method of [<code>CLI API: edit command line</code>](#module_CLI API_ edit command line)  
+**Kind**: inner method of [<code>CLI API: command line</code>](#module_CLI API_ command line)  
 **Returns**: <code>Promise.&lt;number&gt;</code> - process exit code  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| argv | <code>\*</code> | Result of `parseEditCommandLine`. |
+| argv | <code>\*</code> | Result of `parseCliCommandLine`. |
 | options | <code>\*</code> | `logger` and `printer` overrides, used by tests. |
 
 <a name="module_CLI API_ errors"></a>
 
 ## CLI API: errors
-Error type used by the `zap edit` command line.
+Error type used by the `zap` command line.
 
 
 * [CLI API: errors](#module_CLI API_ errors)
@@ -967,7 +993,7 @@ Builds a `CliError` for a lookup that matched more than one entity.
 <a name="module_CLI API_ help"></a>
 
 ## CLI API: help
-`zap edit help`: describes the whole command surface, either as a page for a
+`zap help`: describes the whole command surface, either as a page for a
 person or as a schema for a script.
 
 This answers the question "what can I do and what do I have to pass" without
@@ -1058,7 +1084,7 @@ Renders help text, either the overview or a single topic.
 <a name="module_CLI API_ help..help"></a>
 
 ### CLI API: help~help(argv) ⇒ <code>string</code>
-Produces the output of `zap edit help`.
+Produces the output of `zap help`.
 
 **Kind**: inner method of [<code>CLI API: help</code>](#module_CLI API_ help)  
 **Returns**: <code>string</code> - the help output  
@@ -1070,7 +1096,7 @@ Produces the output of `zap edit help`.
 <a name="module_CLI API_ operations"></a>
 
 ## CLI API: operations
-Every edit and query that `zap edit` can perform on a configuration.
+Every edit and query the configuration commands can perform.
 
 These are deliberately written on top of the same `query-*` modules that the
 REST layer uses, so that a change made from the command line is
@@ -1187,7 +1213,7 @@ stand. Cluster and device type names routinely contain spaces and slashes.
 <a name="module_CLI API_ operations..suggestion"></a>
 
 ### CLI API: operations~suggestion(ctx, operation, [options]) ⇒ <code>string</code>
-Builds a runnable `zap edit` command line against the configuration in hand.
+Builds a runnable configuration command against the file in hand.
 
 Suggestions are only worth printing if they can be run without editing them
 first, so the real file name goes in and values are quoted.
@@ -2184,7 +2210,7 @@ Runs a single operation by name.
 <a name="module_CLI API_ output rendering"></a>
 
 ## CLI API: output rendering
-Rendering of `zap edit` results, either as text for a person or as JSON for
+Rendering of `zap` results, either as text for a person or as JSON for
 a script.
 
 
@@ -2964,9 +2990,9 @@ Expands a `--side` value into the list of sides it stands for.
 <a name="module_CLI API_ batch scripts"></a>
 
 ## CLI API: batch scripts
-Reads the batch scripts consumed by `zap edit apply`.
+Reads the batch scripts consumed by `zap apply`.
 
-Loading the ZCL metadata dominates the cost of any single `zap edit`
+Loading the ZCL metadata dominates the cost of any single `zap`
 invocation, so applying a list of operations in one process is the
 recommended way to make more than a couple of changes.
 
@@ -3027,7 +3053,7 @@ Validates the parsed script and turns it into a plain operation list.
 <a name="module_CLI API_ session lifecycle"></a>
 
 ## CLI API: session lifecycle
-Load / mutate / save lifecycle for the `zap edit` command line. This is the
+Load / mutate / save lifecycle for the `zap` command line. This is the
 headless counterpart of what the HTTP server does for the GUI: it puts a
 .zap file into a session in the database, hands that session to the
 operations, and writes the result back out.
@@ -3250,9 +3276,9 @@ Releases the database.
 <a name="module_CLI API_ command surface"></a>
 
 ## CLI API: command surface
-The `zap edit` command surface, described as data.
+The configuration command surface, described as data.
 
-The yargs command tree and the machine readable output of `zap edit help`
+The yargs command tree and the machine readable output of `zap help`
 are both generated from this one description, so what the parser accepts and
 what the help advertises cannot drift apart. That matters most for callers
 that are not people: a script or an agent can read the schema, learn every
@@ -3311,7 +3337,7 @@ scripts use (`deviceType`).
 <a name="module_CLI API_ command surface..topLevel"></a>
 
 ### CLI API: command surface~topLevel
-Operations that sit directly under `zap edit` rather than in a group.
+Operations that sit directly under `zap` rather than in a group.
 
 **Kind**: inner constant of [<code>CLI API: command surface</code>](#module_CLI API_ command surface)  
 <a name="module_CLI API_ command surface..globalOptions"></a>
