@@ -1393,6 +1393,13 @@ operations, and writes the result back out.
 
 
 * [CLI API: session lifecycle](#module_CLI API_ session lifecycle)
+    * [~testDatabaseCache](#module_CLI API_ session lifecycle..testDatabaseCache) : <code>\*</code>
+    * [~testDatabaseCacheKey](#module_CLI API_ session lifecycle..testDatabaseCacheKey) : <code>string</code> \| <code>null</code>
+    * [~useTestDatabaseCache()](#module_CLI API_ session lifecycle..useTestDatabaseCache) ⇒ <code>boolean</code>
+    * [~testDatabaseCacheKeyFor(argv)](#module_CLI API_ session lifecycle..testDatabaseCacheKeyFor) ⇒ <code>string</code>
+    * [~loadPackagesIntoDatabase(db, argv, logger)](#module_CLI API_ session lifecycle..loadPackagesIntoDatabase)
+    * [~openDatabase(argv, logger)](#module_CLI API_ session lifecycle..openDatabase) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [~resetTestDatabaseCache()](#module_CLI API_ session lifecycle..resetTestDatabaseCache) ⇒ <code>Promise.&lt;void&gt;</code>
     * [~open(argv, options)](#module_CLI API_ session lifecycle..open) ⇒ <code>Promise.&lt;\*&gt;</code>
     * [~packages(ctx)](#module_CLI API_ session lifecycle..packages) ⇒ <code>Promise.&lt;Array&gt;</code>
     * [~samePath(a, b)](#module_CLI API_ session lifecycle..samePath) ⇒ <code>boolean</code>
@@ -1407,6 +1414,56 @@ operations, and writes the result back out.
     * [~save(ctx, outputPath, options)](#module_CLI API_ session lifecycle..save) ⇒ <code>Promise.&lt;string&gt;</code>
     * [~close(ctx)](#module_CLI API_ session lifecycle..close) ⇒ <code>Promise</code>
 
+<a name="module_CLI API_ session lifecycle..testDatabaseCache"></a>
+
+### CLI API: session lifecycle~testDatabaseCache : <code>\*</code>
+reused under Jest to avoid reloading ZCL metadata every runCli
+
+**Kind**: inner property of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+<a name="module_CLI API_ session lifecycle..testDatabaseCacheKey"></a>
+
+### CLI API: session lifecycle~testDatabaseCacheKey : <code>string</code> \| <code>null</code>
+**Kind**: inner property of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+<a name="module_CLI API_ session lifecycle..useTestDatabaseCache"></a>
+
+### CLI API: session lifecycle~useTestDatabaseCache() ⇒ <code>boolean</code>
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+<a name="module_CLI API_ session lifecycle..testDatabaseCacheKeyFor"></a>
+
+### CLI API: session lifecycle~testDatabaseCacheKeyFor(argv) ⇒ <code>string</code>
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+
+| Param | Type |
+| --- | --- |
+| argv | <code>\*</code> | 
+
+<a name="module_CLI API_ session lifecycle..loadPackagesIntoDatabase"></a>
+
+### CLI API: session lifecycle~loadPackagesIntoDatabase(db, argv, logger)
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+
+| Param | Type |
+| --- | --- |
+| db | <code>\*</code> | 
+| argv | <code>\*</code> | 
+| logger | <code>function</code> | 
+
+<a name="module_CLI API_ session lifecycle..openDatabase"></a>
+
+### CLI API: session lifecycle~openDatabase(argv, logger) ⇒ <code>Promise.&lt;\*&gt;</code>
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
+
+| Param | Type |
+| --- | --- |
+| argv | <code>\*</code> | 
+| logger | <code>function</code> | 
+
+<a name="module_CLI API_ session lifecycle..resetTestDatabaseCache"></a>
+
+### CLI API: session lifecycle~resetTestDatabaseCache() ⇒ <code>Promise.&lt;void&gt;</code>
+Drops the in-memory database kept for unit tests.
+
+**Kind**: inner method of [<code>CLI API: session lifecycle</code>](#module_CLI API_ session lifecycle)  
 <a name="module_CLI API_ session lifecycle..open"></a>
 
 ### CLI API: session lifecycle~open(argv, options) ⇒ <code>Promise.&lt;\*&gt;</code>
